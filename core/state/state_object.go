@@ -98,6 +98,7 @@ func (s *stateObject) empty() bool {
 type Account struct {
 	Nonce    uint64
 	Balance  *big.Int
+	Reputation *big.Float
 	Root     common.Hash // merkle root of the storage trie
 	CodeHash []byte
 }
@@ -107,9 +108,13 @@ func newObject(db *StateDB, address common.Address, data Account) *stateObject {
 	if data.Balance == nil {
 		data.Balance = new(big.Int)
 	}
+	if data.Reputation == nil {
+		data.Reputation = new(big.Float)
+	}
 	if data.CodeHash == nil {
 		data.CodeHash = emptyCodeHash
 	}
+
 	return &stateObject{
 		db:            db,
 		address:       address,
@@ -293,6 +298,42 @@ func (self *stateObject) setBalance(amount *big.Int) {
 	self.data.Balance = amount
 }
 
+// AddReputation adds amount from c's reputation.
+// It is used to add funds to the destination account of a transfer.
+func (c *stateObject) AddReputation(amount *big.Float) {
+	// EIP158: We must check emptiness for the objects such that the account
+	// clearing (0,0,0 objects) can take effect.
+	if amount.Sign() == 0 {
+		if c.empty() {
+			c.touch()
+		}
+
+		return
+	}
+	c.SetReputation(new(big.Float).Add(c.Reputation(), amount))
+}
+
+// SubReputation removes amount from c's reputation.
+// It is used to remove funds from the origin account of a transfer.
+func (c *stateObject) SubReputation(amount *big.Float) {
+	if amount.Sign() == 0 {
+		return
+	}
+	c.SetReputation(new(big.Float).Sub(c.Reputation(), amount))
+}
+
+func (self *stateObject) SetReputation(amount *big.Float) {
+	self.db.journal.append(reputationChange{
+		account: &self.address,
+		prev:    new(big.Float).Set(self.data.Reputation),
+	})
+	self.setReputation(amount)
+}
+
+func (self *stateObject) setReputation(amount *big.Float) {
+	self.data.Reputation = amount
+}
+
 // Return the gas back to the origin. Used by the Virtual machine or Closures
 func (c *stateObject) ReturnGas(gas *big.Int) {}
 
@@ -369,6 +410,10 @@ func (self *stateObject) CodeHash() []byte {
 
 func (self *stateObject) Balance() *big.Int {
 	return self.data.Balance
+}
+
+func (self *stateObject) Reputation() *big.Float {
+	return self.data.Reputation
 }
 
 func (self *stateObject) Nonce() uint64 {
