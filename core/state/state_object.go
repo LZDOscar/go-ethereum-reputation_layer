@@ -90,14 +90,16 @@ type stateObject struct {
 
 // empty returns whether the account is considered empty.
 func (s *stateObject) empty() bool {
-	return s.data.Nonce == 0 && s.data.Balance.Sign() == 0 && bytes.Equal(s.data.CodeHash, emptyCodeHash)
+	return s.data.Nonce == 0 && s.data.Balance.Sign() == 0 && s.data.Reputation.Sign() == 0 && bytes.Equal(s.data.CodeHash, emptyCodeHash)
 }
 
 // Account is the Ethereum consensus representation of accounts.
 // These objects are stored in the main account trie.
+// add reputation
 type Account struct {
 	Nonce    uint64
 	Balance  *big.Int
+	Reputation *big.Int
 	Root     common.Hash // merkle root of the storage trie
 	CodeHash []byte
 }
@@ -106,6 +108,9 @@ type Account struct {
 func newObject(db *StateDB, address common.Address, data Account) *stateObject {
 	if data.Balance == nil {
 		data.Balance = new(big.Int)
+	}
+	if data.Reputation == nil{
+		data.Reputation = new(big.Int)
 	}
 	if data.CodeHash == nil {
 		data.CodeHash = emptyCodeHash
@@ -293,6 +298,43 @@ func (self *stateObject) setBalance(amount *big.Int) {
 	self.data.Balance = amount
 }
 
+// new added
+// AddReputation removes amount from c's reputation.
+// It is used to add funds to the destination account of a transfer.
+func (c *stateObject) AddReputation(amount *big.Int) {
+	// EIP158: We must check emptiness for the objects such that the account
+	// clearing (0,0,0 objects) can take effect.
+	if amount.Sign() == 0 {
+		if c.empty() {
+			c.touch()
+		}
+
+		return
+	}
+	c.SetReputation(new(big.Int).Add(c.Reputation(), amount))
+}
+
+// SubReputation removes amount from c's reputation.
+// It is used to remove funds from the origin account of a transfer.
+func (c *stateObject) SubReputation(amount *big.Int) {
+	if amount.Sign() == 0 {
+		return
+	}
+	c.SetReputation(new(big.Int).Sub(c.Reputation(), amount))
+}
+
+func (self *stateObject) SetReputation(amount *big.Int) {
+	self.db.journal.append(reputationChange{
+		account: &self.address,
+		prev:    new(big.Int).Set(self.data.Reputation),
+	})
+	self.setReputation(amount)
+}
+
+func (self *stateObject) setReputation(amount *big.Int) {
+	self.data.Reputation = amount
+}
+
 // Return the gas back to the origin. Used by the Virtual machine or Closures
 func (c *stateObject) ReturnGas(gas *big.Int) {}
 
@@ -370,6 +412,11 @@ func (self *stateObject) CodeHash() []byte {
 func (self *stateObject) Balance() *big.Int {
 	return self.data.Balance
 }
+
+func (self *stateObject) Reputation() *big.Int {
+	return self.data.Reputation
+}
+
 
 func (self *stateObject) Nonce() uint64 {
 	return self.data.Nonce
