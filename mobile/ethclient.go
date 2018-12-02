@@ -161,6 +161,15 @@ func (ec *EthereumClient) GetBalanceAt(ctx *Context, account *Address, number in
 	return &BigInt{rawBalance}, err
 }
 
+func (ec *EthereumClient) GetReputationAt(ctx *Context, account *Address, number int64) (reputation *BigInt, _ error) {
+	if number < 0 {
+		rawReputation, err := ec.client.ReputationAt(ctx.context, account.address, nil)
+		return &BigInt{rawReputation}, err
+	}
+	rawReputation, err := ec.client.ReputationAt(ctx.context, account.address, big.NewInt(number))
+	return &BigInt{rawReputation}, err
+}
+
 // GetStorageAt returns the value of key in the contract storage of the given account.
 // The block number can be <0, in which case the value is taken from the latest known block.
 func (ec *EthereumClient) GetStorageAt(ctx *Context, account *Address, key *Hash, number int64) (storage []byte, _ error) {
@@ -245,6 +254,11 @@ func (ec *EthereumClient) SubscribeFilterLogs(ctx *Context, query *FilterQuery, 
 func (ec *EthereumClient) GetPendingBalanceAt(ctx *Context, account *Address) (balance *BigInt, _ error) {
 	rawBalance, err := ec.client.PendingBalanceAt(ctx.context, account.address)
 	return &BigInt{rawBalance}, err
+}
+
+func (ec *EthereumClient) GetPendingReputationAt(ctx *Context, account *Address) (reputation *BigInt, _ error) {
+	rawReputation, err := ec.client.PendingReputationAt(ctx.context, account.address)
+	return &BigInt{rawReputation}, err
 }
 
 // GetPendingStorageAt returns the value of key in the contract storage of the given account in the pending state.
