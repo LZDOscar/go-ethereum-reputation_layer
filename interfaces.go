@@ -186,6 +186,7 @@ type GasPricer interface {
 // retrieve the next available transaction nonce for a specific account.
 type PendingStateReader interface {
 	PendingBalanceAt(ctx context.Context, account common.Address) (*big.Int, error)
+	PendingReputationAt(ctx context.Context, account common.Address) (*big.Int, error)
 	PendingStorageAt(ctx context.Context, account common.Address, key common.Hash) ([]byte, error)
 	PendingCodeAt(ctx context.Context, account common.Address) ([]byte, error)
 	PendingNonceAt(ctx context.Context, account common.Address) (uint64, error)
