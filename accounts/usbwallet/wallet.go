@@ -356,11 +356,17 @@ func (w *wallet) selfDerive() {
 			// Check the account's status against the current chain state
 			var (
 				balance *big.Int
+				reputation *big.Int
 				nonce   uint64
 			)
 			balance, err = w.deriveChain.BalanceAt(context, nextAddr, nil)
 			if err != nil {
 				w.log.Warn("USB wallet balance retrieval failed", "err", err)
+				break
+			}
+			reputation, err = w.deriveChain.ReputationAt(context, nextAddr, nil)
+			if err != nil {
+				w.log.Warn("USB wallet reputation retrieval failed", "err", err)
 				break
 			}
 			nonce, err = w.deriveChain.NonceAt(context, nextAddr, nil)
@@ -369,7 +375,7 @@ func (w *wallet) selfDerive() {
 				break
 			}
 			// If the next account is empty, stop self-derivation, but add it nonetheless
-			if balance.Sign() == 0 && nonce == 0 {
+			if balance.Sign() == 0 && reputation.Sign() == 0 && nonce == 0 {
 				empty = true
 			}
 			// We've just self-derived a new account, start tracking it locally
@@ -385,7 +391,7 @@ func (w *wallet) selfDerive() {
 
 			// Display a log message to the user for new (or previously empty accounts)
 			if _, known := w.paths[nextAddr]; !known || (!empty && nextAddr == w.deriveNextAddr) {
-				w.log.Info("USB wallet discovered new account", "address", nextAddr, "path", path, "balance", balance, "nonce", nonce)
+				w.log.Info("USB wallet discovered new account", "address", nextAddr, "path", path, "balance", balance, "reputation", reputation, "nonce", nonce)
 			}
 			// Fetch the next potential account
 			if !empty {
