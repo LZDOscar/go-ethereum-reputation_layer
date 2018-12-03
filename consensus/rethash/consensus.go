@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-package ethash
+package rethash
 
 import (
 	"bytes"
@@ -38,11 +38,12 @@ import (
 
 // Ethash proof-of-work protocol constants.
 var (
-	FrontierBlockReward       = big.NewInt(5e+18) // Block reward in wei for successfully mining a block
-	ByzantiumBlockReward      = big.NewInt(3e+18) // Block reward in wei for successfully mining a block upward from Byzantium
-	ConstantinopleBlockReward = big.NewInt(2e+18) // Block reward in wei for successfully mining a block upward from Constantinople
-	maxUncles                 = 2                 // Maximum number of uncles allowed in a single block
-	allowedFutureBlockTime    = 15 * time.Second  // Max time from current time allowed for blocks, before they're considered future blocks
+	FrontierBlockReward           = big.NewInt(5e+18) // Block reward in wei for successfully mining a block
+	FrontierBlockReputationReward = uint64(1)         // Block reward in reputation for successfully mining a block
+	ByzantiumBlockReward          = big.NewInt(3e+18) // Block reward in wei for successfully mining a block upward from Byzantium
+	ConstantinopleBlockReward     = big.NewInt(2e+18) // Block reward in wei for successfully mining a block upward from Constantinople
+	maxUncles                     = 2                 // Maximum number of uncles allowed in a single block
+	allowedFutureBlockTime        = 15 * time.Second  // Max time from current time allowed for blocks, before they're considered future blocks
 
 	// calcDifficultyConstantinople is the difficulty adjustment algorithm for Constantinople.
 	// It returns the difficulty that a new block should have when created at time given the
@@ -605,9 +606,11 @@ var (
 // AccumulateRewards credits the coinbase of the given block with the mining
 // reward. The total reward consists of the static block reward and rewards for
 // included uncles. The coinbase of each uncle block is also rewarded.
+// TODO: updated reputation
 func accumulateRewards(config *params.ChainConfig, state *state.StateDB, header *types.Header, uncles []*types.Header) {
 	// Select the correct block reward based on chain progression
 	blockReward := FrontierBlockReward
+	blockReputationReward := FrontierBlockReputationReward
 	if config.IsByzantium(header.Number) {
 		blockReward = ByzantiumBlockReward
 	}
@@ -616,7 +619,9 @@ func accumulateRewards(config *params.ChainConfig, state *state.StateDB, header 
 	}
 	// Accumulate the rewards for the miner and any included uncles
 	reward := new(big.Int).Set(blockReward)
+	rreward := blockReputationReward
 	r := new(big.Int)
+	rr := 0
 	for _, uncle := range uncles {
 		r.Add(uncle.Number, big8)
 		r.Sub(r, header.Number)
@@ -627,6 +632,16 @@ func accumulateRewards(config *params.ChainConfig, state *state.StateDB, header 
 		r.Div(blockReward, big32)
 		reward.Add(reward, r)
 
+		// accumulate the reputation rewards
+		//rr.Add(uncle.Number, big8)
+		//rr.Sub(rr, header.Number)
+		//rr.Mul(rr, blockReputationReward)
+		//rr.Div(rr, big8)
+		//state.AddReputation(uncle.Coinbase, rr)
+		//
+		//rr.Div(blockReputationReward, big32)
+		//rreward.Add(rreward, rr)
 	}
 	state.AddBalance(header.Coinbase, reward)
+	state.AddReputation(header.Coinbase, rreward)
 }

@@ -212,12 +212,12 @@ func (self *StateDB) GetBalance(addr common.Address) *big.Int {
 	return common.Big0
 }
 
-func (self *StateDB) GetReputation(addr common.Address) *big.Int {
+func (self *StateDB) GetReputation(addr common.Address) uint64 {
 	stateObject := self.getStateObject(addr)
 	if stateObject != nil {
 		return stateObject.Reputation()
 	}
-	return common.Big0
+	return 0
 }
 
 func (self *StateDB) GetNonce(addr common.Address) uint64 {
@@ -347,25 +347,25 @@ func (self *StateDB) SetBalance(addr common.Address, amount *big.Int) {
 	}
 }
 
-func (self *StateDB) AddReputation(addr common.Address, amount *big.Int) {
+func (self *StateDB) AddReputation(addr common.Address, reeputation uint64) {
 	stateObject := self.GetOrNewStateObject(addr)
 	if stateObject != nil {
-		stateObject.AddReputation(amount)
+		stateObject.AddReputation(reeputation)
 	}
 }
 
 // SubBalance subtracts amount from the account associated with addr.
-func (self *StateDB) SubReputation(addr common.Address, amount *big.Int) {
+func (self *StateDB) SubReputation(addr common.Address, reeputation uint64) {
 	stateObject := self.GetOrNewStateObject(addr)
 	if stateObject != nil {
-		stateObject.SubReputation(amount)
+		stateObject.SubReputation(reeputation)
 	}
 }
 
-func (self *StateDB) SetReputation(addr common.Address, amount *big.Int) {
+func (self *StateDB) SetReputation(addr common.Address, reeputation uint64) {
 	stateObject := self.GetOrNewStateObject(addr)
 	if stateObject != nil {
-		stateObject.SetReputation(amount)
+		stateObject.SetReputation(reeputation)
 	}
 }
 

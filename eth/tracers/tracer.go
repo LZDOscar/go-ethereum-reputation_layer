@@ -194,7 +194,7 @@ func (dw *dbWrapper) pushObject(vm *duktape.Context) {
 
 	// Push the wrapper for statedb.GetReputation
 	vm.PushGoFunction(func(ctx *duktape.Context) int {
-		pushBigInt(dw.db.GetReputation(common.BytesToAddress(popSlice(ctx))), ctx)
+		ctx.PushInt(int(dw.db.GetReputation(common.BytesToAddress(popSlice(ctx)))))
 		return 1
 	})
 	vm.PutPropString(obj, "getReputation")

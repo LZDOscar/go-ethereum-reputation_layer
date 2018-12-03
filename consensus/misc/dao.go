@@ -83,6 +83,6 @@ func ApplyDAOHardFork(statedb *state.StateDB) {
 		statedb.SetBalance(addr, new(big.Int))
 
 		statedb.AddReputation(params.DAORefundContract, statedb.GetReputation(addr))
-		statedb.SetReputation(addr, new(big.Int))
+		statedb.SetReputation(addr, 0)
 	}
 }

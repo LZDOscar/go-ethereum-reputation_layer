@@ -133,12 +133,12 @@ func (b *SimulatedBackend) BalanceAt(ctx context.Context, contract common.Addres
 	return statedb.GetBalance(contract), nil
 }
 
-func (b *SimulatedBackend) ReputationAt(ctx context.Context, contract common.Address, blockNumber *big.Int) (*big.Int, error) {
+func (b *SimulatedBackend) ReputationAt(ctx context.Context, contract common.Address, blockNumber *big.Int) (uint64, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
 	if blockNumber != nil && blockNumber.Cmp(b.blockchain.CurrentBlock().Number()) != 0 {
-		return nil, errBlockNumberUnsupported
+		return 0, errBlockNumberUnsupported
 	}
 	statedb, _ := b.blockchain.State()
 	return statedb.GetReputation(contract), nil

@@ -161,13 +161,13 @@ func (ec *EthereumClient) GetBalanceAt(ctx *Context, account *Address, number in
 	return &BigInt{rawBalance}, err
 }
 
-func (ec *EthereumClient) GetReputationAt(ctx *Context, account *Address, number int64) (reputation *BigInt, _ error) {
+func (ec *EthereumClient) GetReputationAt(ctx *Context, account *Address, number int64) (reputation uint64, _ error) {
 	if number < 0 {
 		rawReputation, err := ec.client.ReputationAt(ctx.context, account.address, nil)
-		return &BigInt{rawReputation}, err
+		return rawReputation, err
 	}
 	rawReputation, err := ec.client.ReputationAt(ctx.context, account.address, big.NewInt(number))
-	return &BigInt{rawReputation}, err
+	return rawReputation, err
 }
 
 // GetStorageAt returns the value of key in the contract storage of the given account.
@@ -256,9 +256,9 @@ func (ec *EthereumClient) GetPendingBalanceAt(ctx *Context, account *Address) (b
 	return &BigInt{rawBalance}, err
 }
 
-func (ec *EthereumClient) GetPendingReputationAt(ctx *Context, account *Address) (reputation *BigInt, _ error) {
+func (ec *EthereumClient) GetPendingReputationAt(ctx *Context, account *Address) (reputation uint64, _ error) {
 	rawReputation, err := ec.client.PendingReputationAt(ctx.context, account.address)
-	return &BigInt{rawReputation}, err
+	return rawReputation, err
 }
 
 // GetPendingStorageAt returns the value of key in the contract storage of the given account in the pending state.
