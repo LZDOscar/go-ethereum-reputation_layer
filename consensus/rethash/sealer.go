@@ -48,7 +48,7 @@ var (
 
 // Seal implements consensus.Engine, attempting to find a nonce that satisfies
 // the block's difficulty requirements.
-func (ethash *Ethash) Seal(chain consensus.ChainReader, block *types.Block, results chan<- *types.Block, stop <-chan struct{}) error {
+func (ethash *REthash) Seal(chain consensus.ChainReader, block *types.Block, results chan<- *types.Block, stop <-chan struct{}) error {
 	// If we're running a fake PoW, simply return a 0 nonce immediately
 	if ethash.config.PowMode == ModeFake || ethash.config.PowMode == ModeFullFake {
 		header := block.Header()
@@ -129,7 +129,7 @@ func (ethash *Ethash) Seal(chain consensus.ChainReader, block *types.Block, resu
 
 // mine is the actual proof-of-work miner that searches for a nonce starting from
 // seed that results in correct final block difficulty.
-func (ethash *Ethash) mine(block *types.Block, id int, seed uint64, abort chan struct{}, found chan *types.Block) {
+func (ethash *REthash) mine(block *types.Block, id int, seed uint64, abort chan struct{}, found chan *types.Block) {
 	// Extract some data from the header
 	var (
 		header  = block.Header()
@@ -150,7 +150,7 @@ search:
 		select {
 		case <-abort:
 			// Mining terminated, update stats and abort
-			logger.Trace("Ethash nonce search aborted", "attempts", nonce-seed)
+			logger.Trace("REthash nonce search aborted", "attempts", nonce-seed)
 			ethash.hashrate.Mark(attempts)
 			break search
 
@@ -172,9 +172,9 @@ search:
 				// Seal and return a block (if still needed)
 				select {
 				case found <- block.WithSeal(header):
-					logger.Trace("Ethash nonce found and reported", "attempts", nonce-seed, "nonce", nonce)
+					logger.Trace("REthash nonce found and reported", "attempts", nonce-seed, "nonce", nonce)
 				case <-abort:
-					logger.Trace("Ethash nonce found but discarded", "attempts", nonce-seed, "nonce", nonce)
+					logger.Trace("REthash nonce found but discarded", "attempts", nonce-seed, "nonce", nonce)
 				}
 				break search
 			}
@@ -187,7 +187,7 @@ search:
 }
 
 // remote is a standalone goroutine to handle remote mining related stuff.
-func (ethash *Ethash) remote(notify []string, noverify bool) {
+func (ethash *REthash) remote(notify []string, noverify bool) {
 	var (
 		works = make(map[common.Hash]*types.Block)
 		rates = make(map[common.Hash]hashrate)
@@ -276,7 +276,7 @@ func (ethash *Ethash) remote(notify []string, noverify bool) {
 		}
 		// Make sure the result channel is assigned.
 		if results == nil {
-			log.Warn("Ethash result channel is empty, submitted mining result is rejected")
+			log.Warn("REthash result channel is empty, submitted mining result is rejected")
 			return false
 		}
 		log.Trace("Verified correct proof-of-work", "sealhash", sealhash, "elapsed", time.Since(start))
@@ -364,7 +364,7 @@ func (ethash *Ethash) remote(notify []string, noverify bool) {
 		case errc := <-ethash.exitCh:
 			// Exit remote loop if ethash is closed and return relevant error.
 			errc <- nil
-			log.Trace("Ethash remote sealer is exiting")
+			log.Trace("REthash remote sealer is exiting")
 			return
 		}
 	}

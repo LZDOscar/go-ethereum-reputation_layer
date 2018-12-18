@@ -24,11 +24,11 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-var errEthashStopped = errors.New("ethash stopped")
+var errREthashStopped = errors.New("ethash stopped")
 
 // API exposes ethash related methods for the RPC interface.
 type API struct {
-	ethash *Ethash // Make sure the mode of ethash is normal.
+	ethash *REthash // Make sure the mode of ethash is normal.
 }
 
 // GetWork returns a work package for external miner.
@@ -51,7 +51,7 @@ func (api *API) GetWork() ([4]string, error) {
 	select {
 	case api.ethash.fetchWorkCh <- &sealWork{errc: errc, res: workCh}:
 	case <-api.ethash.exitCh:
-		return [4]string{}, errEthashStopped
+		return [4]string{}, errREthashStopped
 	}
 
 	select {

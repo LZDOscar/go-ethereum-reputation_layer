@@ -75,7 +75,7 @@ func TestCacheFileEvict(t *testing.T) {
 	wg.Wait()
 }
 
-func verifyTest(wg *sync.WaitGroup, e *Ethash, workerIndex, epochs int) {
+func verifyTest(wg *sync.WaitGroup, e *REthash, workerIndex, epochs int) {
 	defer wg.Done()
 
 	const wiggle = 4 * epochLength
@@ -159,7 +159,7 @@ func TestClosedRemoteSealer(t *testing.T) {
 	ethash.Close()
 
 	api := &API{ethash}
-	if _, err := api.GetWork(); err != errEthashStopped {
+	if _, err := api.GetWork(); err != errREthashStopped {
 		t.Error("expect to return an error to indicate ethash is stopped")
 	}
 
