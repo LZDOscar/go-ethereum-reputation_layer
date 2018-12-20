@@ -225,6 +225,32 @@ func (_MinerBook *MinerBookCallerSession) UsedHashedPubkey(arg0 [32]byte) (bool,
 	return _MinerBook.Contract.UsedHashedPubkey(&_MinerBook.CallOpts, arg0)
 }
 
+// reputationList is a paid mutator transaction binding the contract method 0xfbf788d6.
+//
+// Solidity: function reputationList(bytes32) constant returns(bool)
+func (_MinerBook *MinerBookCaller) ReputationList(opts *bind.CallOpts, arg0 [32]byte) (int64, error) {
+	var (
+		ret0 = new(bool)
+	)
+	out := ret0
+	err := _MinerBook.contract.Call(opts, out, "reputationList", arg0)
+	return *ret0, err
+}
+
+// reputationList is a paid mutator transaction binding the contract method 0xfbf788d6.
+//
+// Solidity: function reputationList(bytes32) constant returns(bool)
+func (_MinerBook *MinerBookSession) ReputationList(arg0 [32]byte) (int64, error) {
+	return _MinerBook.Contract.ReputationList(&_MinerBook.CallOpts, arg0)
+}
+
+// reputationList is a paid mutator transaction binding the contract method 0xfbf788d6.
+//
+// Solidity: function reputationList(bytes32) constant returns(bool)
+func (_MinerBook *MinerBookCallerSession) ReputationList(arg0 [32]byte) (int64, error) {
+	return _MinerBook.Contract.ReputationList(&_MinerBook.CallOpts, arg0)
+}
+
 // Register is a paid mutator transaction binding the contract method 0x41c0e1b5.
 //
 // Solidity: Register (_pubkey bytes, _withdrawalAddressbytes32 address, _randaoCommitment bytes32) returns()
@@ -244,6 +270,48 @@ func (_MinerBook *MinerBookSession) Register(_pubkey []byte, _withdrawalAddressb
 // Solidity: Register (_pubkey bytes, _withdrawalAddressbytes32 address, _randaoCommitment bytes32) returns()
 func (_MinerBook *MinerBookTransactorSession) Register(_pubkey []byte, _withdrawalAddressbytes32 common.Address, _randaoCommitment [32]byte) (*types.Transaction, error) {
 	return _MinerBook.Contract.Register(&_MinerBook.TransactOpts, _pubkey, _withdrawalAddressbytes32, _randaoCommitment)
+}
+
+// addReputation is a paid mutator transaction binding the contract method 0x41c0e1b5.
+//
+// Solidity: addReputation (_pubkey bytes, _withdrawalAddressbytes32 address, _randaoCommitment bytes32) returns()
+func (_MinerBook *MinerBookSession) AddReputation(_pubkey []byte, _value int) (*types.Transaction, error) {
+	return _MinerBook.Contract.AddReputation(&_MinerBook.TransactOpts, _pubkey, _value)
+}
+
+// addReputation is a paid mutator transaction binding the contract method 0x41c0e1b5.
+//
+// Solidity: addReputation (_pubkey bytes, _withdrawalAddressbytes32 address, _randaoCommitment bytes32) returns()
+func (_MinerBook *MinerBookTransactorSession) AddReputation(_pubkey []byte, _value int) (*types.Transaction, error) {
+	return _MinerBook.Contract.AddReputation(&_MinerBook.TransactOpts, _pubkey, _value)
+}
+
+// addReputation is a paid mutator transaction binding the contract method 0x41c0e1b5.
+//
+// Solidity: addReputation (_pubkey bytes, _withdrawalAddressbytes32 address, _randaoCommitment bytes32) returns()
+func (_MinerBook *MinerBookTransactor) AddReputation(opts *bind.TransactOpts, _pubkey []byte, _value int) (*types.Transaction, error) {
+	return _MinerBook.contract.Transact(opts, "addReputation", _pubkey, _value)
+}
+
+// SubReputation is a paid mutator transaction binding the contract method 0x41c0e1b5.
+//
+// Solidity: SubReputation (_pubkey bytes, _withdrawalAddressbytes32 address, _randaoCommitment bytes32) returns()
+func (_MinerBook *MinerBookSession) SubReputation(_pubkey []byte, _value int) (*types.Transaction, error) {
+	return _MinerBook.Contract.SubReputation(&_MinerBook.TransactOpts, _pubkey, _value)
+}
+
+// SubReputation is a paid mutator transaction binding the contract method 0x41c0e1b5.
+//
+// Solidity: SubReputation (_pubkey bytes, _withdrawalAddressbytes32 address, _randaoCommitment bytes32) returns()
+func (_MinerBook *MinerBookTransactorSession) SubReputation(_pubkey []byte, _value int) (*types.Transaction, error) {
+	return _MinerBook.Contract.SubReputation(&_MinerBook.TransactOpts, _pubkey, _value)
+}
+
+// SubReputation is a paid mutator transaction binding the contract method 0x41c0e1b5.
+//
+// Solidity: SubReputation (_pubkey bytes, _withdrawalAddressbytes32 address, _randaoCommitment bytes32) returns()
+func (_MinerBook *MinerBookTransactor) SubReputation(opts *bind.TransactOpts, _pubkey []byte, _value int) (*types.Transaction, error) {
+	return _MinerBook.contract.Transact(opts, "subReputation", _pubkey, _value)
 }
 
 // MinerBookMinerRegisteredIterator is returned from FilterMinerRegistered and is used to iterate over the raw logs and unpacked data for MinerRegistered events raised by the MinerBook contract.

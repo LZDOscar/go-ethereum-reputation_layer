@@ -17,13 +17,16 @@ contract minerbook {
         int indexed reputation
     );
 
-    //TODO: address => (register_name, register_ID, enable)
+    //TODO: address => (state, register_name, register_ID, enable)
     //enable：default is true, if the miner is punished because of lowing than REPUTATION_LOWLIMIT
     // the enable value is false, the address can't register again.
     mapping (bytes32 => bool) public usedHashedPubkey;
 
     //reputation list: address => reputation value
     mapping (bytes32 => int) public reputationList;
+
+    //reputation black list: address => (register_name, register_ID)
+    mapping (bytes32 => bool) public reputationBlackList;
 
     uint public constant MINER_ADMISSION = 32 ether;
     int public constant REPUTATION_LOWLIMIT = -250;
