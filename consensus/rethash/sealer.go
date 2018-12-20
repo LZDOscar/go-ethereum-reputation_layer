@@ -134,10 +134,22 @@ func (ethash *REthash) mine(block *types.Block, id int, seed uint64, abort chan 
 	var (
 		header  = block.Header()
 		hash    = ethash.SealHash(header).Bytes()
-		target  = new(big.Int).Div(two256, header.Difficulty)
+		target  = new(big.Int)
 		number  = header.Number.Uint64()
 		dataset = ethash.dataset(number, false)
 	)
+	//NEW change: add reputation to target
+	author, err := ethash.Author(header)
+	if err != nil {
+
+	}
+	reputation := ethash.GetReputationByState(author)
+	if reputation >= 0 {
+		target = new(big.Int).Div(two256, new(big.Int).Sub(header.Difficulty, new(big.Int).SetInt64(reputation*repbase)))
+	} else {
+		target = new(big.Int).Div(two256, new(big.Int).Add(header.Difficulty, new(big.Int).SetInt64(reputation*repbase)))
+	}
+
 	// Start generating random nonces until we abort or find a good one
 	var (
 		attempts = int64(0)

@@ -49,6 +49,9 @@ var (
 	// two256 is a big integer representing 2^256
 	two256 = new(big.Int).Exp(big.NewInt(2), big.NewInt(256), big.NewInt(0))
 
+	// the base integer of reputation to mul
+	repbase = int64(1000)
+
 	// sharedREthash is a full instance that can be shared between multiple users.
 	sharedREthash = New(Config{"", 3, 0, "", 1, 0, ModeNormal}, nil, false)
 

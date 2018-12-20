@@ -25,25 +25,37 @@ import (
 	"time"
 
 	mapset "github.com/deckarep/golang-set"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/consensus/misc"
+	"github.com/ethereum/go-ethereum/contracts/minerbook"
+	"github.com/ethereum/go-ethereum/contracts/minerbook/contract"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/crypto/sha3"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
+	"log"
+	"strings"
+
+	"context"
 )
 
 // REthash proof-of-work protocol constants.
 var (
 	FrontierBlockReward           = big.NewInt(5e+18) // Block reward in wei for successfully mining a block
-	FrontierBlockReputationReward = uint64(1)         // Block reward in reputation for successfully mining a block
+	FrontierBlockReputationReward = int64(1)          // Block reward in reputation for successfully mining a block
 	ByzantiumBlockReward          = big.NewInt(3e+18) // Block reward in wei for successfully mining a block upward from Byzantium
 	ConstantinopleBlockReward     = big.NewInt(2e+18) // Block reward in wei for successfully mining a block upward from Constantinople
 	maxUncles                     = 2                 // Maximum number of uncles allowed in a single block
 	allowedFutureBlockTime        = 15 * time.Second  // Max time from current time allowed for blocks, before they're considered future blocks
+
+	reputationFrontierBlockCount   = 100 //the count of block needed when calculating reputation
+	reputationFormulaOptimizeParam = 30
 
 	// calcDifficultyConstantinople is the difficulty adjustment algorithm for Constantinople.
 	// It returns the difficulty that a new block should have when created at time given the
@@ -257,12 +269,12 @@ func (ethash *REthash) verifyHeader(chain consensus.ChainReader, header, parent 
 	}
 	// Verify the block's difficulty based in it's timestamp and parent's difficulty
 	// New Change: add the reputation of Author to CalcDifficulty function
-	author, err := ethash.Author(header)
-	if err != nil {
-		return fmt.Errorf("invalid Author")
-	}
-	authorReputation := GetReputation(author)
-	expected := ethash.CalcDifficulty(chain, header.Time.Uint64(), parent, authorReputation)
+	//author, err := ethash.Author(header)
+	//if err != nil {
+	//	return fmt.Errorf("invalid Author")
+	//}
+	//authorReputation := GetReputation(author)
+	expected := ethash.CalcDifficulty(chain, header.Time.Uint64(), parent)
 
 	if expected.Cmp(header.Difficulty) != 0 {
 		return fmt.Errorf("invalid difficulty: have %v, want %v", header.Difficulty, expected)
@@ -307,33 +319,132 @@ func (ethash *REthash) verifyHeader(chain consensus.ChainReader, header, parent 
 	return nil
 }
 
+func (ethash *REthash) GetReputationByState(address common.Address) int64 {
+	conn, _ := ethclient.Dial("\\\\.\\pipe\\geth.ipc")
+	ctx := context.Background()
+	reputation, _ := conn.ReputationAt(ctx, address, nil)
+	return reputation
+}
+
 // According to the MinerBook contract, obtain the author's reputation.
 // TODO:
-func GetReputation(address common.Address) int {
-	return 0
+func (ethash *REthash) GetReputationByContract(address common.Address) int64 {
+	//var abi = contract.MinerBookABI
+	var addr = minerbook.MainNetAddress
+	// Create an IPC based RPC connection to a remote node and instantiate a contract binding
+	conn, err := ethclient.Dial("\\\\.\\pipe\\geth.ipc")
+	if err != nil {
+		log.Fatalf("Failed to connect to the Ethereum client: %v", err)
+		return -1
+	}
+	mb, err := contract.NewMinerBook(addr, conn)
+	if err != nil {
+		log.Fatalf("Failed to instantiate a Token contract: %v", err)
+		return -1
+	}
+
+	used, err := mb.UsedHashedPubkey(nil, crypto.Keccak256Hash(address[:]))
+	if err != nil {
+		log.Fatalf("query registered error :%v", err)
+		return -1
+	}
+	if used != true {
+		log.Fatalf("address is not registered")
+		return -1
+	}
+
+	reputation, err := mb.ReputationList(nil, crypto.Keccak256Hash(address[:]))
+	if err != nil {
+		log.Fatalf("query reputation error:%v", err)
+	}
+
+	return reputation
+
+	//var backend = contract.MinerBook
+	//var contract, err = contract.NewMinerBook(minerbook.MainNetAddress,ethash)
+	//minerbookcontract.
+	//return 0
+}
+
+//TODO:
+func (ethash *REthash) AddReputation(address common.Address, value int) (*types.Transaction, error) {
+	var addr = minerbook.MainNetAddress
+	var abi = contract.MinerBookABI
+	conn, err := ethclient.Dial("\\\\.\\pipe\\geth.ipc")
+	if err != nil {
+		log.Fatalf("Failed to connect to the Ethereum client: %v", err)
+		return nil, err
+	}
+	mb, err := contract.NewMinerBook(addr, conn)
+	if err != nil {
+		log.Fatalf("Failed to instantiate a minerbook contract: %v", err)
+		return nil, err
+	}
+
+	// Create an authorized transactor and spend 1 unicorn
+	auth, err := bind.NewTransactor(strings.NewReader(abi), "123")
+	if err != nil {
+		log.Fatalf("Failed to create authorized transactor: %v", err)
+		return nil, err
+	}
+	tx, err := mb.AddReputation(auth, address[:], value)
+	if err != nil {
+		log.Fatalf("Failed to request minerbook addreputation: %v", err)
+		return nil, err
+	}
+	return tx, nil
+}
+
+//TODO:
+func (ethash *REthash) SubReputation(address common.Address, value int) (*types.Transaction, error) {
+	var addr = minerbook.MainNetAddress
+	var abi = contract.MinerBookABI
+	conn, err := ethclient.Dial("\\\\.\\pipe\\geth.ipc")
+	if err != nil {
+		log.Fatalf("Failed to connect to the Ethereum client: %v", err)
+		return nil, err
+	}
+	mb, err := contract.NewMinerBook(addr, conn)
+	if err != nil {
+		log.Fatalf("Failed to instantiate a minerbook contract: %v", err)
+		return nil, err
+	}
+
+	// Create an authorized transactor and spend 1 unicorn
+	auth, err := bind.NewTransactor(strings.NewReader(abi), "123")
+	if err != nil {
+		log.Fatalf("Failed to create authorized transactor: %v", err)
+		return nil, err
+	}
+	tx, err := mb.SubReputation(auth, address[:], value)
+	if err != nil {
+		log.Fatalf("Failed to request minerbook addreputation: %v", err)
+		return nil, err
+	}
+	return tx, nil
 }
 
 // CalcDifficulty is the difficulty adjustment algorithm. It returns
 // the difficulty that a new block should have when created at time
 // given the parent block's time and difficulty.
-func (ethash *REthash) CalcDifficulty(chain consensus.ChainReader, time uint64, parent *types.Header, reputation int) *big.Int {
-	return CalcDifficulty(chain.Config(), time, parent, reputation)
+func (ethash *REthash) CalcDifficulty(chain consensus.ChainReader, time uint64, parent *types.Header) *big.Int {
+	return CalcDifficulty(chain.Config(), time, parent)
 }
 
 // CalcDifficulty is the difficulty adjustment algorithm. It returns
 // the difficulty that a new block should have when created at time
 // given the parent block's time and difficulty.
-func CalcDifficulty(config *params.ChainConfig, time uint64, parent *types.Header, reputation int) *big.Int {
+func CalcDifficulty(config *params.ChainConfig, time uint64, parent *types.Header) *big.Int {
 	next := new(big.Int).Add(parent.Number, big1)
 	switch {
 	case config.IsConstantinople(next):
-		return calcDifficultyConstantinople(time, parent, reputation)
+		return calcDifficultyConstantinople(time, parent)
 	case config.IsByzantium(next):
-		return calcDifficultyByzantium(time, parent, reputation)
+		return calcDifficultyByzantium(time, parent)
 	case config.IsHomestead(next):
-		return calcDifficultyHomestead(time, parent, reputation)
+		return calcDifficultyHomestead(time, parent)
 	default:
-		return calcDifficultyFrontier(time, parent, reputation)
+		return calcDifficultyFrontier(time, parent)
 	}
 }
 
@@ -351,11 +462,11 @@ var (
 // the difficulty is calculated with Byzantium rules, which differs from Homestead in
 // how uncles affect the calculation
 // TODO: Calculation formula should add the reputation.
-func makeDifficultyCalculator(bombDelay *big.Int) func(time uint64, parent *types.Header, reputation int) *big.Int {
+func makeDifficultyCalculator(bombDelay *big.Int) func(time uint64, parent *types.Header) *big.Int {
 	// Note, the calculations below looks at the parent number, which is 1 below
 	// the block number. Thus we remove one from the delay given
 	bombDelayFromParent := new(big.Int).Sub(bombDelay, big1)
-	return func(time uint64, parent *types.Header, reputation int) *big.Int {
+	return func(time uint64, parent *types.Header) *big.Int {
 		// https://github.com/ethereum/EIPs/issues/100.
 		// algorithm:
 		// diff = (parent_diff +
@@ -414,7 +525,7 @@ func makeDifficultyCalculator(bombDelay *big.Int) func(time uint64, parent *type
 // calcDifficultyHomestead is the difficulty adjustment algorithm. It returns
 // the difficulty that a new block should have when created at time given the
 // parent block's time and difficulty. The calculation uses the Homestead rules.
-func calcDifficultyHomestead(time uint64, parent *types.Header, reputation int) *big.Int {
+func calcDifficultyHomestead(time uint64, parent *types.Header) *big.Int {
 	// https://github.com/ethereum/EIPs/blob/master/EIPS/eip-2.md
 	// algorithm:
 	// diff = (parent_diff +
@@ -463,7 +574,7 @@ func calcDifficultyHomestead(time uint64, parent *types.Header, reputation int) 
 // calcDifficultyFrontier is the difficulty adjustment algorithm. It returns the
 // difficulty that a new block should have when created at time given the parent
 // block's time and difficulty. The calculation uses the Frontier rules.
-func calcDifficultyFrontier(time uint64, parent *types.Header, reputation int) *big.Int {
+func calcDifficultyFrontier(time uint64, parent *types.Header) *big.Int {
 	diff := new(big.Int)
 	adjust := new(big.Int).Div(parent.Difficulty, params.DifficultyBoundDivisor)
 	bigTime := new(big.Int)
@@ -558,7 +669,22 @@ func (ethash *REthash) verifySeal(chain consensus.ChainReader, header *types.Hea
 	if !bytes.Equal(header.MixDigest[:], digest) {
 		return errInvalidMixDigest
 	}
-	target := new(big.Int).Div(two256, header.Difficulty)
+
+	//NEW change: add reputation
+	author, err := ethash.Author(header)
+	if err != nil {
+		return fmt.Errorf("invalid Author")
+	}
+	//reputation := ethash.GetReputationByContract(author)
+	reputation := ethash.GetReputationByState(author)
+	//reputation := ethash.state.
+	var target = new(big.Int)
+	if reputation >= 0 {
+		target = new(big.Int).Div(two256, new(big.Int).Sub(header.Difficulty, new(big.Int).SetInt64(reputation*repbase)))
+	} else {
+		target = new(big.Int).Div(two256, new(big.Int).Add(header.Difficulty, new(big.Int).SetInt64(reputation*repbase)))
+	}
+
 	if new(big.Int).SetBytes(result).Cmp(target) > 0 {
 		return errInvalidPoW
 	}
@@ -572,6 +698,11 @@ func (ethash *REthash) Prepare(chain consensus.ChainReader, header *types.Header
 	if parent == nil {
 		return consensus.ErrUnknownAncestor
 	}
+	//author, err := ethash.Author(header)
+	//if err != nil {
+	//	return fmt.Errorf("invalid Author")
+	//}
+	//authorReputation := GetReputation(author)
 	header.Difficulty = ethash.CalcDifficulty(chain, header.Time.Uint64(), parent)
 	return nil
 }
@@ -616,6 +747,31 @@ var (
 	big32 = big.NewInt(32)
 )
 
+func getReputationRewards(state *state.StateDB, header *types.Header) int64 {
+
+	author := header.Coinbase
+	authorString := author.String()
+	authorAcount := 0
+	parentHeader := new(types.Header)
+
+	conn, _ := ethclient.Dial("\\\\.\\pipe\\geth.ipc")
+	//ctx := context.Background()
+
+	parentHeader = header
+	for i := 0; i < reputationFrontierBlockCount; i++ {
+		parentHeader, _ = conn.HeaderByHash(nil, parentHeader.ParentHash)
+		iString := parentHeader.Coinbase.String()
+		if strings.Compare(authorString, iString) == 0 {
+			authorAcount += 1
+		}
+	}
+
+	repCurrent := int(state.GetReputation(author))
+	repReward := (1 - (authorAcount / reputationFrontierBlockCount)) * (1000 - repCurrent) / reputationFormulaOptimizeParam
+
+	return int64(repReward)
+}
+
 // AccumulateRewards credits the coinbase of the given block with the mining
 // reward. The total reward consists of the static block reward and rewards for
 // included uncles. The coinbase of each uncle block is also rewarded.
@@ -623,7 +779,7 @@ var (
 func accumulateRewards(config *params.ChainConfig, state *state.StateDB, header *types.Header, uncles []*types.Header) {
 	// Select the correct block reward based on chain progression
 	blockReward := FrontierBlockReward
-	blockReputationReward := FrontierBlockReputationReward
+	//blockReputationReward := FrontierBlockReputationReward
 	if config.IsByzantium(header.Number) {
 		blockReward = ByzantiumBlockReward
 	}
@@ -632,7 +788,7 @@ func accumulateRewards(config *params.ChainConfig, state *state.StateDB, header 
 	}
 	// Accumulate the rewards for the miner and any included uncles
 	reward := new(big.Int).Set(blockReward)
-	rreward := blockReputationReward
+
 	r := new(big.Int)
 	//rr := 0
 	for _, uncle := range uncles {
@@ -656,5 +812,7 @@ func accumulateRewards(config *params.ChainConfig, state *state.StateDB, header 
 		//rreward.Add(rreward, rr)
 	}
 	state.AddBalance(header.Coinbase, reward)
-	state.AddReputation(header.Coinbase, rreward)
+
+	repReward := getReputationRewards(state, header)
+	state.AddReputation(header.Coinbase, repReward)
 }
