@@ -99,7 +99,7 @@ func (s *stateObject) empty() bool {
 type Account struct {
 	Nonce      uint64
 	Balance    *big.Int
-	Reputation uint64
+	Reputation int64
 	Root       common.Hash // merkle root of the storage trie
 	CodeHash   []byte
 }
@@ -301,7 +301,7 @@ func (self *stateObject) setBalance(amount *big.Int) {
 // new added
 // AddReputation removes amount from c's reputation.
 // It is used to add funds to the destination account of a transfer.
-func (c *stateObject) AddReputation(reputation uint64) {
+func (c *stateObject) AddReputation(reputation int64) {
 	// EIP158: We must check emptiness for the objects such that the account
 	// clearing (0,0,0 objects) can take effect.
 	if reputation == 0 {
@@ -316,14 +316,14 @@ func (c *stateObject) AddReputation(reputation uint64) {
 
 // SubReputation removes amount from c's reputation.
 // It is used to remove funds from the origin account of a transfer.
-func (c *stateObject) SubReputation(reputation uint64) {
+func (c *stateObject) SubReputation(reputation int64) {
 	if reputation == 0 {
 		return
 	}
 	c.SetReputation(c.Reputation() + reputation)
 }
 
-func (self *stateObject) SetReputation(reputation uint64) {
+func (self *stateObject) SetReputation(reputation int64) {
 	self.db.journal.append(reputationChange{
 		account: &self.address,
 		prev:    self.data.Reputation,
@@ -331,7 +331,7 @@ func (self *stateObject) SetReputation(reputation uint64) {
 	self.setReputation(reputation)
 }
 
-func (self *stateObject) setReputation(reputation uint64) {
+func (self *stateObject) setReputation(reputation int64) {
 	self.data.Reputation = reputation
 }
 
@@ -413,7 +413,7 @@ func (self *stateObject) Balance() *big.Int {
 	return self.data.Balance
 }
 
-func (self *stateObject) Reputation() uint64 {
+func (self *stateObject) Reputation() int64 {
 	return self.data.Reputation
 }
 
