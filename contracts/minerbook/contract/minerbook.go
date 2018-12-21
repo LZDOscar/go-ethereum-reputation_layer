@@ -201,8 +201,8 @@ func (_MinerBook *MinerBookCallerSession) MinerAdmission() (*big.Int, error) {
 
 // UsedHashedPubkey is a paid mutator transaction binding the contract method 0xfbf788d6.
 //
-// Solidity: function UsedHashedPubkey(bytes32) constant returns(bool)
-func (_MinerBook *MinerBookCaller) UsedHashedPubkey(opts *bind.CallOpts, arg0 [32]byte) (bool, error) {
+// Solidity: function UsedHashedPubkey(bytes48) constant returns(bool)
+func (_MinerBook *MinerBookCaller) UsedHashedPubkey(opts *bind.CallOpts, arg0 common.Address) (bool, error) {
 	var (
 		ret0 = new(bool)
 	)
@@ -213,24 +213,24 @@ func (_MinerBook *MinerBookCaller) UsedHashedPubkey(opts *bind.CallOpts, arg0 [3
 
 // UsedHashedPubkey is a paid mutator transaction binding the contract method 0xfbf788d6.
 //
-// Solidity: function UsedHashedPubkey(bytes32) constant returns(bool)
-func (_MinerBook *MinerBookSession) UsedHashedPubkey(arg0 [32]byte) (bool, error) {
+// Solidity: function UsedHashedPubkey(bytes48) constant returns(bool)
+func (_MinerBook *MinerBookSession) UsedHashedPubkey(arg0 common.Address) (bool, error) {
 	return _MinerBook.Contract.UsedHashedPubkey(&_MinerBook.CallOpts, arg0)
 }
 
 // UsedHashedPubkey is a paid mutator transaction binding the contract method 0xfbf788d6.
 //
-// Solidity: function UsedHashedPubkey(bytes32) constant returns(bool)
-func (_MinerBook *MinerBookCallerSession) UsedHashedPubkey(arg0 [32]byte) (bool, error) {
+// Solidity: function UsedHashedPubkey(bytes48) constant returns(bool)
+func (_MinerBook *MinerBookCallerSession) UsedHashedPubkey(arg0 common.Address) (bool, error) {
 	return _MinerBook.Contract.UsedHashedPubkey(&_MinerBook.CallOpts, arg0)
 }
 
 // reputationList is a paid mutator transaction binding the contract method 0xfbf788d6.
 //
-// Solidity: function reputationList(bytes32) constant returns(bool)
-func (_MinerBook *MinerBookCaller) ReputationList(opts *bind.CallOpts, arg0 [32]byte) (int64, error) {
+// Solidity: function reputationList(bytes48) constant returns(bool)
+func (_MinerBook *MinerBookCaller) ReputationList(opts *bind.CallOpts, arg0 common.Address) (int64, error) {
 	var (
-		ret0 = new(bool)
+		ret0 = new(int64)
 	)
 	out := ret0
 	err := _MinerBook.contract.Call(opts, out, "reputationList", arg0)
@@ -239,77 +239,100 @@ func (_MinerBook *MinerBookCaller) ReputationList(opts *bind.CallOpts, arg0 [32]
 
 // reputationList is a paid mutator transaction binding the contract method 0xfbf788d6.
 //
-// Solidity: function reputationList(bytes32) constant returns(bool)
-func (_MinerBook *MinerBookSession) ReputationList(arg0 [32]byte) (int64, error) {
+// Solidity: function reputationList(bytes48) constant returns(bool)
+func (_MinerBook *MinerBookSession) ReputationList(arg0 common.Address) (int64, error) {
 	return _MinerBook.Contract.ReputationList(&_MinerBook.CallOpts, arg0)
 }
 
 // reputationList is a paid mutator transaction binding the contract method 0xfbf788d6.
 //
-// Solidity: function reputationList(bytes32) constant returns(bool)
-func (_MinerBook *MinerBookCallerSession) ReputationList(arg0 [32]byte) (int64, error) {
+// Solidity: function reputationList(bytes48) constant returns(bool)
+func (_MinerBook *MinerBookCallerSession) ReputationList(arg0 common.Address) (int64, error) {
 	return _MinerBook.Contract.ReputationList(&_MinerBook.CallOpts, arg0)
 }
 
-// Register is a paid mutator transaction binding the contract method 0x41c0e1b5.
+func (_MinerBook *MinerBookCaller) GetMiners(opts *bind.CallOpts) (map[common.Address]bool, error) {
+	var (
+		ret0 = new(map[common.Address]bool)
+	)
+	out := ret0
+	err := _MinerBook.contract.Call(opts, out, "getMiners")
+	return *ret0, err
+}
+
+// reputationList is a paid mutator transaction binding the contract method 0xfbf788d6.
 //
-// Solidity: Register (_pubkey bytes, _withdrawalAddressbytes32 address, _randaoCommitment bytes32) returns()
-func (_MinerBook *MinerBookTransactor) Register(opts *bind.TransactOpts, _pubkey []byte, _withdrawalAddressbytes32 common.Address, _randaoCommitment [32]byte) (*types.Transaction, error) {
-	return _MinerBook.contract.Transact(opts, "register", _pubkey, _withdrawalAddressbytes32, _randaoCommitment)
+// Solidity: function reputationList(bytes48) constant returns(bool)
+func (_MinerBook *MinerBookSession) GetMiners() (map[common.Address]bool, error) {
+	return _MinerBook.Contract.GetMiners(&_MinerBook.CallOpts)
+}
+
+// reputationList is a paid mutator transaction binding the contract method 0xfbf788d6.
+//
+// Solidity: function reputationList(bytes48) constant returns(bool)
+func (_MinerBook *MinerBookCallerSession) GetMiners() (map[common.Address]bool, error) {
+	return _MinerBook.Contract.GetMiners(&_MinerBook.CallOpts)
 }
 
 // Register is a paid mutator transaction binding the contract method 0x41c0e1b5.
 //
-// Solidity: Register (_pubkey bytes, _withdrawalAddressbytes32 address, _randaoCommitment bytes32) returns()
-func (_MinerBook *MinerBookSession) Register(_pubkey []byte, _withdrawalAddressbytes32 common.Address, _randaoCommitment [32]byte) (*types.Transaction, error) {
-	return _MinerBook.Contract.Register(&_MinerBook.TransactOpts, _pubkey, _withdrawalAddressbytes32, _randaoCommitment)
+// Solidity: Register (_pubkey bytes, _withdrawalAddressbytes48 address, _randaoCommitment bytes48) returns()
+func (_MinerBook *MinerBookTransactor) Register(opts *bind.TransactOpts, _pubkey []byte, _withdrawalAddressbytes48 common.Address, _randaoCommitment [48]byte) (*types.Transaction, error) {
+	return _MinerBook.contract.Transact(opts, "register", _pubkey, _withdrawalAddressbytes48, _randaoCommitment)
 }
 
 // Register is a paid mutator transaction binding the contract method 0x41c0e1b5.
 //
-// Solidity: Register (_pubkey bytes, _withdrawalAddressbytes32 address, _randaoCommitment bytes32) returns()
-func (_MinerBook *MinerBookTransactorSession) Register(_pubkey []byte, _withdrawalAddressbytes32 common.Address, _randaoCommitment [32]byte) (*types.Transaction, error) {
-	return _MinerBook.Contract.Register(&_MinerBook.TransactOpts, _pubkey, _withdrawalAddressbytes32, _randaoCommitment)
+// Solidity: Register (_pubkey bytes, _withdrawalAddressbytes48 address, _randaoCommitment bytes48) returns()
+func (_MinerBook *MinerBookSession) Register(_pubkey []byte, _withdrawalAddressbytes48 common.Address, _randaoCommitment [48]byte) (*types.Transaction, error) {
+	return _MinerBook.Contract.Register(&_MinerBook.TransactOpts, _pubkey, _withdrawalAddressbytes48, _randaoCommitment)
+}
+
+// Register is a paid mutator transaction binding the contract method 0x41c0e1b5.
+//
+// Solidity: Register (_pubkey bytes, _withdrawalAddressbytes48 address, _randaoCommitment bytes48) returns()
+func (_MinerBook *MinerBookTransactorSession) Register(_pubkey []byte, _withdrawalAddressbytes48 common.Address, _randaoCommitment [48]byte) (*types.Transaction, error) {
+	return _MinerBook.Contract.Register(&_MinerBook.TransactOpts, _pubkey, _withdrawalAddressbytes48, _randaoCommitment)
 }
 
 // addReputation is a paid mutator transaction binding the contract method 0x41c0e1b5.
 //
-// Solidity: addReputation (_pubkey bytes, _withdrawalAddressbytes32 address, _randaoCommitment bytes32) returns()
+// Solidity: addReputation (_pubkey bytes, _withdrawalAddressbytes48 address, _randaoCommitment bytes48) returns()
 func (_MinerBook *MinerBookSession) AddReputation(_pubkey []byte, _value int) (*types.Transaction, error) {
 	return _MinerBook.Contract.AddReputation(&_MinerBook.TransactOpts, _pubkey, _value)
 }
 
 // addReputation is a paid mutator transaction binding the contract method 0x41c0e1b5.
 //
-// Solidity: addReputation (_pubkey bytes, _withdrawalAddressbytes32 address, _randaoCommitment bytes32) returns()
+// Solidity: addReputation (_pubkey bytes, _withdrawalAddressbytes48 address, _randaoCommitment bytes48) returns()
 func (_MinerBook *MinerBookTransactorSession) AddReputation(_pubkey []byte, _value int) (*types.Transaction, error) {
 	return _MinerBook.Contract.AddReputation(&_MinerBook.TransactOpts, _pubkey, _value)
 }
 
 // addReputation is a paid mutator transaction binding the contract method 0x41c0e1b5.
 //
-// Solidity: addReputation (_pubkey bytes, _withdrawalAddressbytes32 address, _randaoCommitment bytes32) returns()
+// Solidity: addReputation (_pubkey bytes, _withdrawalAddressbytes48 address, _randaoCommitment bytes48) returns()
 func (_MinerBook *MinerBookTransactor) AddReputation(opts *bind.TransactOpts, _pubkey []byte, _value int) (*types.Transaction, error) {
 	return _MinerBook.contract.Transact(opts, "addReputation", _pubkey, _value)
 }
 
 // SubReputation is a paid mutator transaction binding the contract method 0x41c0e1b5.
 //
-// Solidity: SubReputation (_pubkey bytes, _withdrawalAddressbytes32 address, _randaoCommitment bytes32) returns()
+// Solidity: SubReputation (_pubkey bytes, _withdrawalAddressbytes48 address, _randaoCommitment bytes48) returns()
 func (_MinerBook *MinerBookSession) SubReputation(_pubkey []byte, _value int) (*types.Transaction, error) {
 	return _MinerBook.Contract.SubReputation(&_MinerBook.TransactOpts, _pubkey, _value)
 }
 
 // SubReputation is a paid mutator transaction binding the contract method 0x41c0e1b5.
 //
-// Solidity: SubReputation (_pubkey bytes, _withdrawalAddressbytes32 address, _randaoCommitment bytes32) returns()
+// Solidity: SubReputation (_pubkey bytes, _withdrawalAddressbytes48 address, _randaoCommitment bytes48) returns()
 func (_MinerBook *MinerBookTransactorSession) SubReputation(_pubkey []byte, _value int) (*types.Transaction, error) {
 	return _MinerBook.Contract.SubReputation(&_MinerBook.TransactOpts, _pubkey, _value)
 }
 
 // SubReputation is a paid mutator transaction binding the contract method 0x41c0e1b5.
 //
-// Solidity: SubReputation (_pubkey bytes, _withdrawalAddressbytes32 address, _randaoCommitment bytes32) returns()
+// Solidity: SubReputation (_pubkey bytes, _withdrawalAddressbytes48 address, _randaoCommitment bytes48) returns()
 func (_MinerBook *MinerBookTransactor) SubReputation(opts *bind.TransactOpts, _pubkey []byte, _value int) (*types.Transaction, error) {
 	return _MinerBook.contract.Transact(opts, "subReputation", _pubkey, _value)
 }
@@ -383,25 +406,25 @@ func (it *MinerBookMinerRegisteredIterator) Close() error {
 
 // MinerBookOverdraft represents a Overdraft event raised by the MinerBook contract.
 type MinerBookMinerRegistered struct {
-	HashedPubkey             [32]byte
-	WithdrawalAddressbytes32 common.Address
-	RandaoCommitment         [32]byte
+	HashedPubkey             [48]byte
+	WithdrawalAddressbytes48 common.Address
+	RandaoCommitment         [48]byte
 	Raw                      types.Log // Blockchain specific contextual infos
 }
 
-// FilterMinerRegistered is a free log retrieval operation binding the contract event 0x2250e2993c15843b32621c89447cc589ee7a9f049c026986e545d3c2c0c6f978.
+// FilterMinerRegistered is a free log retrieval operation binding the contract event 0x2250e2993c15843b48621c89447cc589ee7a9f049c026986e545d3c2c0c6f978.
 //
-// Solidity: event MinerRegistered(hashedPubkey indexed bytes32, withdrawalAddressbytes32 indexed address, randaoCommitment indexed bytes32)
-func (_MinerBook *MinerBookFilterer) FilterMinerRegistered(opts *bind.FilterOpts, hashedPubkey [][32]byte, withdrawalAddressbytes32 []common.Address, randaoCommitment [][32]byte) (*MinerBookMinerRegisteredIterator, error) {
+// Solidity: event MinerRegistered(hashedPubkey indexed bytes48, withdrawalAddressbytes48 indexed address, randaoCommitment indexed bytes48)
+func (_MinerBook *MinerBookFilterer) FilterMinerRegistered(opts *bind.FilterOpts, hashedPubkey [][48]byte, withdrawalAddressbytes48 []common.Address, randaoCommitment [][48]byte) (*MinerBookMinerRegisteredIterator, error) {
 
 	var hashedPubkeyRule []interface{}
 	for _, hashedPubkeyItem := range hashedPubkey {
 		hashedPubkeyRule = append(hashedPubkeyRule, hashedPubkeyItem)
 	}
 
-	var withdrawalAddressbytes32Rule []interface{}
-	for _, withdrawalAddressbytes32Item := range withdrawalAddressbytes32 {
-		withdrawalAddressbytes32Rule = append(withdrawalAddressbytes32Rule, withdrawalAddressbytes32Item)
+	var withdrawalAddressbytes48Rule []interface{}
+	for _, withdrawalAddressbytes48Item := range withdrawalAddressbytes48 {
+		withdrawalAddressbytes48Rule = append(withdrawalAddressbytes48Rule, withdrawalAddressbytes48Item)
 	}
 
 	var randaoCommitmentRule []interface{}
@@ -409,7 +432,7 @@ func (_MinerBook *MinerBookFilterer) FilterMinerRegistered(opts *bind.FilterOpts
 		randaoCommitmentRule = append(randaoCommitmentRule, randaoCommitmentItem)
 	}
 
-	logs, sub, err := _MinerBook.contract.FilterLogs(opts, "MinerRegistered", hashedPubkeyRule, withdrawalAddressbytes32Rule, randaoCommitmentRule)
+	logs, sub, err := _MinerBook.contract.FilterLogs(opts, "MinerRegistered", hashedPubkeyRule, withdrawalAddressbytes48Rule, randaoCommitmentRule)
 	if err != nil {
 		return nil, err
 	}
@@ -417,19 +440,19 @@ func (_MinerBook *MinerBookFilterer) FilterMinerRegistered(opts *bind.FilterOpts
 	return &MinerBookMinerRegisteredIterator{contract: _MinerBook.contract, event: "MinerRegistered", logs: logs, sub: sub}, nil
 }
 
-// WatchMinerRegistered is a free log subscription operation binding the contract event 0x2250e2993c15843b32621c89447cc589ee7a9f049c026986e545d3c2c0c6f978.
+// WatchMinerRegistered is a free log subscription operation binding the contract event 0x2250e2993c15843b48621c89447cc589ee7a9f049c026986e545d3c2c0c6f978.
 //
-// Solidity: event MinerRegistered(hashedPubkey indexed bytes32, withdrawalAddressbytes32 indexed address, randaoCommitment indexed bytes32)
-func (_MinerBook *MinerBookFilterer) WatchMinerRegistered(opts *bind.WatchOpts, sink chan<- *MinerBookMinerRegistered, hashedPubkey [][32]byte, withdrawalAddressbytes32 []common.Address, randaoCommitment [][32]byte) (event.Subscription, error) {
+// Solidity: event MinerRegistered(hashedPubkey indexed bytes48, withdrawalAddressbytes48 indexed address, randaoCommitment indexed bytes48)
+func (_MinerBook *MinerBookFilterer) WatchMinerRegistered(opts *bind.WatchOpts, sink chan<- *MinerBookMinerRegistered, hashedPubkey [][48]byte, withdrawalAddressbytes48 []common.Address, randaoCommitment [][48]byte) (event.Subscription, error) {
 
 	var hashedPubkeyRule []interface{}
 	for _, hashedPubkeyItem := range hashedPubkey {
 		hashedPubkeyRule = append(hashedPubkeyRule, hashedPubkeyItem)
 	}
 
-	var withdrawalAddressbytes32Rule []interface{}
-	for _, withdrawalAddressbytes32Item := range withdrawalAddressbytes32 {
-		withdrawalAddressbytes32Rule = append(withdrawalAddressbytes32Rule, withdrawalAddressbytes32Item)
+	var withdrawalAddressbytes48Rule []interface{}
+	for _, withdrawalAddressbytes48Item := range withdrawalAddressbytes48 {
+		withdrawalAddressbytes48Rule = append(withdrawalAddressbytes48Rule, withdrawalAddressbytes48Item)
 	}
 
 	var randaoCommitmentRule []interface{}
@@ -437,7 +460,7 @@ func (_MinerBook *MinerBookFilterer) WatchMinerRegistered(opts *bind.WatchOpts, 
 		randaoCommitmentRule = append(randaoCommitmentRule, randaoCommitmentItem)
 	}
 
-	logs, sub, err := _MinerBook.contract.WatchLogs(opts, "MinerRegistered", hashedPubkeyRule, withdrawalAddressbytes32Rule, randaoCommitmentRule)
+	logs, sub, err := _MinerBook.contract.WatchLogs(opts, "MinerRegistered", hashedPubkeyRule, withdrawalAddressbytes48Rule, randaoCommitmentRule)
 	if err != nil {
 		return nil, err
 	}
