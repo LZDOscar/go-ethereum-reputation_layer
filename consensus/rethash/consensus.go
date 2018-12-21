@@ -34,15 +34,12 @@ import (
 	"github.com/ethereum/go-ethereum/contracts/minerbook/contract"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/crypto/sha3"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
 	"log"
 	"strings"
-
-	"context"
 )
 
 // REthash proof-of-work protocol constants.
@@ -54,8 +51,12 @@ var (
 	maxUncles                     = 2                 // Maximum number of uncles allowed in a single block
 	allowedFutureBlockTime        = 15 * time.Second  // Max time from current time allowed for blocks, before they're considered future blocks
 
-	reputationFrontierBlockCount   = 100 //the count of block needed when calculating reputation
-	reputationFormulaOptimizeParam = 30
+	ReputationLowThreshold              = int64(-200)
+	ReputationHighThreshold             = int64(1000)
+	ReputationFrontierBlockCount        = 100  //the count of block needed when calculating reputation
+	ReputationBlackBlockCount           = 1000 //the count of block needed when calculating reputation
+	ReputationRwardFormulaOptimizeParam = 100
+	ReputationDecayFormulaOptimizeParam = 100
 
 	// calcDifficultyConstantinople is the difficulty adjustment algorithm for Constantinople.
 	// It returns the difficulty that a new block should have when created at time given the
@@ -269,11 +270,15 @@ func (ethash *REthash) verifyHeader(chain consensus.ChainReader, header, parent 
 	}
 	// Verify the block's difficulty based in it's timestamp and parent's difficulty
 	// New Change: add the reputation of Author to CalcDifficulty function
+
+	// Verify the author reputation
+
 	//author, err := ethash.Author(header)
 	//if err != nil {
 	//	return fmt.Errorf("invalid Author")
 	//}
-	//authorReputation := GetReputation(author)
+	//reputation := ethash.GetReputationByState(author)
+
 	expected := ethash.CalcDifficulty(chain, header.Time.Uint64(), parent)
 
 	if expected.Cmp(header.Difficulty) != 0 {
@@ -303,6 +308,7 @@ func (ethash *REthash) verifyHeader(chain consensus.ChainReader, header, parent 
 	if diff := new(big.Int).Sub(header.Number, parent.Number); diff.Cmp(big.NewInt(1)) != 0 {
 		return consensus.ErrInvalidNumber
 	}
+
 	// Verify the engine specific seal securing the block
 	if seal {
 		if err := ethash.VerifySeal(chain, header); err != nil {
@@ -321,8 +327,8 @@ func (ethash *REthash) verifyHeader(chain consensus.ChainReader, header, parent 
 
 func (ethash *REthash) GetReputationByState(address common.Address) int64 {
 	conn, _ := ethclient.Dial("\\\\.\\pipe\\geth.ipc")
-	ctx := context.Background()
-	reputation, _ := conn.ReputationAt(ctx, address, nil)
+	//ctx := context.Background()
+	reputation, _ := conn.ReputationAt(nil, address, nil)
 	return reputation
 }
 
@@ -343,7 +349,8 @@ func (ethash *REthash) GetReputationByContract(address common.Address) int64 {
 		return -1
 	}
 
-	used, err := mb.UsedHashedPubkey(nil, crypto.Keccak256Hash(address[:]))
+	//used, err := mb.UsedHashedPubkey(nil, crypto.Keccak256Hash(address[:]))
+	used, err := mb.UsedHashedPubkey(nil, address)
 	if err != nil {
 		log.Fatalf("query registered error :%v", err)
 		return -1
@@ -353,7 +360,7 @@ func (ethash *REthash) GetReputationByContract(address common.Address) int64 {
 		return -1
 	}
 
-	reputation, err := mb.ReputationList(nil, crypto.Keccak256Hash(address[:]))
+	reputation, err := mb.ReputationList(nil, address)
 	if err != nil {
 		log.Fatalf("query reputation error:%v", err)
 	}
@@ -670,13 +677,16 @@ func (ethash *REthash) verifySeal(chain consensus.ChainReader, header *types.Hea
 		return errInvalidMixDigest
 	}
 
-	//NEW change: add reputation
+	////NEW change: add reputation
 	author, err := ethash.Author(header)
 	if err != nil {
 		return fmt.Errorf("invalid Author")
 	}
 	//reputation := ethash.GetReputationByContract(author)
 	reputation := ethash.GetReputationByState(author)
+	if reputation < ReputationLowThreshold {
+		return fmt.Errorf("reputation is too low")
+	}
 	//reputation := ethash.state.
 	var target = new(big.Int)
 	if reputation >= 0 {
@@ -758,7 +768,7 @@ func getReputationRewards(state *state.StateDB, header *types.Header) int64 {
 	//ctx := context.Background()
 
 	parentHeader = header
-	for i := 0; i < reputationFrontierBlockCount; i++ {
+	for i := 0; i < ReputationFrontierBlockCount; i++ {
 		parentHeader, _ = conn.HeaderByHash(nil, parentHeader.ParentHash)
 		iString := parentHeader.Coinbase.String()
 		if strings.Compare(authorString, iString) == 0 {
@@ -767,9 +777,54 @@ func getReputationRewards(state *state.StateDB, header *types.Header) int64 {
 	}
 
 	repCurrent := int(state.GetReputation(author))
-	repReward := (1 - (authorAcount / reputationFrontierBlockCount)) * (1000 - repCurrent) / reputationFormulaOptimizeParam
-
+	repReward := (1 - (authorAcount / ReputationFrontierBlockCount)) * (1000 - repCurrent) / ReputationRwardFormulaOptimizeParam
+	if repCurrent+repReward > int(ReputationHighThreshold) {
+		return ReputationHighThreshold - int64(repCurrent)
+	}
 	return int64(repReward)
+}
+
+func reputationDecay(state *state.StateDB, header *types.Header) error {
+	// 每100个区块调用一次
+	// 调用合约，返回miner列表,减少一些信誉值。
+	var addr = minerbook.MainNetAddress
+	// Create an IPC based RPC connection to a remote node and instantiate a contract binding
+	conn, err := ethclient.Dial("\\\\.\\pipe\\geth.ipc")
+	if err != nil {
+		log.Fatalf("Failed to connect to the Ethereum client: %v", err)
+		return err
+	}
+	mb, err := contract.NewMinerBook(addr, conn)
+	if err != nil {
+		log.Fatalf("Failed to instantiate a Token contract: %v", err)
+		return err
+	}
+	//TODO:
+	minerMap, err := mb.GetMiners(nil)
+	if err != nil {
+		log.Fatalf("query registered error :%v", err)
+		return err
+	}
+	var minerList = make(map[common.Address]int)
+	for miner, eable := range minerMap {
+		if eable == true {
+			//mineraddr := crypto.Keccak256Hash(miner[:]).Bytes()
+			minerList[miner] = 0
+		}
+	}
+	parentHeader := new(types.Header)
+	for i := 0; i < ReputationBlackBlockCount; i++ {
+		parentHeader, _ = conn.HeaderByHash(nil, parentHeader.ParentHash)
+		//mineriString := parentHeader.Coinbase.String()
+		mineraddr := parentHeader.Coinbase
+		minerList[mineraddr] += 1
+	}
+	for miner, mineraccount := range minerList {
+		repCurrent := int(state.GetReputation(miner))
+		repDecay := (1 - mineraccount/ReputationFrontierBlockCount) * repCurrent / ReputationDecayFormulaOptimizeParam
+		state.SubReputation(miner, int64(repDecay))
+	}
+	return nil
 }
 
 // AccumulateRewards credits the coinbase of the given block with the mining
@@ -815,4 +870,9 @@ func accumulateRewards(config *params.ChainConfig, state *state.StateDB, header 
 
 	repReward := getReputationRewards(state, header)
 	state.AddReputation(header.Coinbase, repReward)
+
+	if new(big.Int).Mod(header.Number, new(big.Int).SetInt64(int64(ReputationBlackBlockCount))).Int64() == 0 {
+		reputationDecay(state, header)
+	}
+
 }
