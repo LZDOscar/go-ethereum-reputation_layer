@@ -315,6 +315,13 @@ func (self *Chequebook) Balance() *big.Int {
 	return new(big.Int).Set(self.balance)
 }
 
+// Reputation returns the current reputation of the chequebook.
+//func (self *Chequebook) Reputation() *big.Int {
+//	defer self.lock.Unlock()
+//	self.lock.Lock()
+//	return new(big.Int).Set(self.reputation)
+//}
+
 // Owner returns the owner account of the chequebook.
 func (self *Chequebook) Owner() common.Address {
 	return self.owner

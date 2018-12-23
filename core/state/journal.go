@@ -103,6 +103,10 @@ type (
 		account *common.Address
 		prev    *big.Int
 	}
+	reputationChange struct {
+		account *common.Address
+		prev    int64
+	}
 	nonceChange struct {
 		account *common.Address
 		prev    uint64
@@ -176,6 +180,14 @@ func (ch balanceChange) revert(s *StateDB) {
 }
 
 func (ch balanceChange) dirtied() *common.Address {
+	return ch.account
+}
+
+func (ch reputationChange) revert(s *StateDB) {
+	s.getStateObject(*ch.account).setReputation(ch.prev)
+}
+
+func (ch reputationChange) dirtied() *common.Address {
 	return ch.account
 }
 

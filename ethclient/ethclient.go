@@ -335,6 +335,11 @@ func (ec *Client) BalanceAt(ctx context.Context, account common.Address, blockNu
 	err := ec.c.CallContext(ctx, &result, "eth_getBalance", account, toBlockNumArg(blockNumber))
 	return (*big.Int)(&result), err
 }
+func (ec *Client) ReputationAt(ctx context.Context, account common.Address, blockNumber *big.Int) (int64, error) {
+	var result int64
+	err := ec.c.CallContext(ctx, &result, "eth_getReputation", account, toBlockNumArg(blockNumber))
+	return result, err
+}
 
 // StorageAt returns the value of key in the contract storage of the given account.
 // The block number can be nil, in which case the value is taken from the latest known block.
@@ -410,6 +415,11 @@ func (ec *Client) PendingBalanceAt(ctx context.Context, account common.Address) 
 	var result hexutil.Big
 	err := ec.c.CallContext(ctx, &result, "eth_getBalance", account, "pending")
 	return (*big.Int)(&result), err
+}
+func (ec *Client) PendingReputationAt(ctx context.Context, account common.Address) (uint64, error) {
+	var result uint64
+	err := ec.c.CallContext(ctx, &result, "eth_getReputation", account, "pending")
+	return result, err
 }
 
 // PendingStorageAt returns the value of key in the contract storage of the given account in the pending state.

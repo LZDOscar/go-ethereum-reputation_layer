@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-package ethash
+package rethash
 
 import (
 	"bytes"
@@ -25,24 +25,37 @@ import (
 	"time"
 
 	mapset "github.com/deckarep/golang-set"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/consensus/misc"
+	"github.com/ethereum/go-ethereum/contracts/minerbook"
+	"github.com/ethereum/go-ethereum/contracts/minerbook/contract"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/crypto/sha3"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
+	"log"
+	"strings"
+
+	"context"
 )
 
-// Ethash proof-of-work protocol constants.
+// REthash proof-of-work protocol constants.
 var (
-	FrontierBlockReward       = big.NewInt(5e+18) // Block reward in wei for successfully mining a block
-	ByzantiumBlockReward      = big.NewInt(3e+18) // Block reward in wei for successfully mining a block upward from Byzantium
-	ConstantinopleBlockReward = big.NewInt(2e+18) // Block reward in wei for successfully mining a block upward from Constantinople
-	maxUncles                 = 2                 // Maximum number of uncles allowed in a single block
-	allowedFutureBlockTime    = 15 * time.Second  // Max time from current time allowed for blocks, before they're considered future blocks
+	FrontierBlockReward           = big.NewInt(5e+18) // Block reward in wei for successfully mining a block
+	FrontierBlockReputationReward = int64(1)          // Block reward in reputation for successfully mining a block
+	ByzantiumBlockReward          = big.NewInt(3e+18) // Block reward in wei for successfully mining a block upward from Byzantium
+	ConstantinopleBlockReward     = big.NewInt(2e+18) // Block reward in wei for successfully mining a block upward from Constantinople
+	maxUncles                     = 2                 // Maximum number of uncles allowed in a single block
+	allowedFutureBlockTime        = 15 * time.Second  // Max time from current time allowed for blocks, before they're considered future blocks
+
+	reputationFrontierBlockCount   = 100 //the count of block needed when calculating reputation
+	reputationFormulaOptimizeParam = 30
 
 	// calcDifficultyConstantinople is the difficulty adjustment algorithm for Constantinople.
 	// It returns the difficulty that a new block should have when created at time given the
@@ -76,13 +89,13 @@ var (
 
 // Author implements consensus.Engine, returning the header's coinbase as the
 // proof-of-work verified author of the block.
-func (ethash *Ethash) Author(header *types.Header) (common.Address, error) {
+func (ethash *REthash) Author(header *types.Header) (common.Address, error) {
 	return header.Coinbase, nil
 }
 
 // VerifyHeader checks whether a header conforms to the consensus rules of the
 // stock Ethereum ethash engine.
-func (ethash *Ethash) VerifyHeader(chain consensus.ChainReader, header *types.Header, seal bool) error {
+func (ethash *REthash) VerifyHeader(chain consensus.ChainReader, header *types.Header, seal bool) error {
 	// If we're running a full engine faking, accept any input as valid
 	if ethash.config.PowMode == ModeFullFake {
 		return nil
@@ -103,7 +116,7 @@ func (ethash *Ethash) VerifyHeader(chain consensus.ChainReader, header *types.He
 // VerifyHeaders is similar to VerifyHeader, but verifies a batch of headers
 // concurrently. The method returns a quit channel to abort the operations and
 // a results channel to retrieve the async verifications.
-func (ethash *Ethash) VerifyHeaders(chain consensus.ChainReader, headers []*types.Header, seals []bool) (chan<- struct{}, <-chan error) {
+func (ethash *REthash) VerifyHeaders(chain consensus.ChainReader, headers []*types.Header, seals []bool) (chan<- struct{}, <-chan error) {
 	// If we're running a full engine faking, accept any input as valid
 	if ethash.config.PowMode == ModeFullFake || len(headers) == 0 {
 		abort, results := make(chan struct{}), make(chan error, len(headers))
@@ -165,7 +178,7 @@ func (ethash *Ethash) VerifyHeaders(chain consensus.ChainReader, headers []*type
 	return abort, errorsOut
 }
 
-func (ethash *Ethash) verifyHeaderWorker(chain consensus.ChainReader, headers []*types.Header, seals []bool, index int) error {
+func (ethash *REthash) verifyHeaderWorker(chain consensus.ChainReader, headers []*types.Header, seals []bool, index int) error {
 	var parent *types.Header
 	if index == 0 {
 		parent = chain.GetHeader(headers[0].ParentHash, headers[0].Number.Uint64()-1)
@@ -183,7 +196,7 @@ func (ethash *Ethash) verifyHeaderWorker(chain consensus.ChainReader, headers []
 
 // VerifyUncles verifies that the given block's uncles conform to the consensus
 // rules of the stock Ethereum ethash engine.
-func (ethash *Ethash) VerifyUncles(chain consensus.ChainReader, block *types.Block) error {
+func (ethash *REthash) VerifyUncles(chain consensus.ChainReader, block *types.Block) error {
 	// If we're running a full engine faking, accept any input as valid
 	if ethash.config.PowMode == ModeFullFake {
 		return nil
@@ -236,7 +249,7 @@ func (ethash *Ethash) VerifyUncles(chain consensus.ChainReader, block *types.Blo
 // verifyHeader checks whether a header conforms to the consensus rules of the
 // stock Ethereum ethash engine.
 // See YP section 4.3.4. "Block Header Validity"
-func (ethash *Ethash) verifyHeader(chain consensus.ChainReader, header, parent *types.Header, uncle bool, seal bool) error {
+func (ethash *REthash) verifyHeader(chain consensus.ChainReader, header, parent *types.Header, uncle bool, seal bool) error {
 	// Ensure that the header's extra-data section is of a reasonable size
 	if uint64(len(header.Extra)) > params.MaximumExtraDataSize {
 		return fmt.Errorf("extra-data too long: %d > %d", len(header.Extra), params.MaximumExtraDataSize)
@@ -255,6 +268,12 @@ func (ethash *Ethash) verifyHeader(chain consensus.ChainReader, header, parent *
 		return errZeroBlockTime
 	}
 	// Verify the block's difficulty based in it's timestamp and parent's difficulty
+	// New Change: add the reputation of Author to CalcDifficulty function
+	//author, err := ethash.Author(header)
+	//if err != nil {
+	//	return fmt.Errorf("invalid Author")
+	//}
+	//authorReputation := GetReputation(author)
 	expected := ethash.CalcDifficulty(chain, header.Time.Uint64(), parent)
 
 	if expected.Cmp(header.Difficulty) != 0 {
@@ -300,10 +319,115 @@ func (ethash *Ethash) verifyHeader(chain consensus.ChainReader, header, parent *
 	return nil
 }
 
+func (ethash *REthash) GetReputationByState(address common.Address) int64 {
+	conn, _ := ethclient.Dial("\\\\.\\pipe\\geth.ipc")
+	ctx := context.Background()
+	reputation, _ := conn.ReputationAt(ctx, address, nil)
+	return reputation
+}
+
+// According to the MinerBook contract, obtain the author's reputation.
+// TODO:
+func (ethash *REthash) GetReputationByContract(address common.Address) int64 {
+	//var abi = contract.MinerBookABI
+	var addr = minerbook.MainNetAddress
+	// Create an IPC based RPC connection to a remote node and instantiate a contract binding
+	conn, err := ethclient.Dial("\\\\.\\pipe\\geth.ipc")
+	if err != nil {
+		log.Fatalf("Failed to connect to the Ethereum client: %v", err)
+		return -1
+	}
+	mb, err := contract.NewMinerBook(addr, conn)
+	if err != nil {
+		log.Fatalf("Failed to instantiate a Token contract: %v", err)
+		return -1
+	}
+
+	used, err := mb.UsedHashedPubkey(nil, crypto.Keccak256Hash(address[:]))
+	if err != nil {
+		log.Fatalf("query registered error :%v", err)
+		return -1
+	}
+	if used != true {
+		log.Fatalf("address is not registered")
+		return -1
+	}
+
+	reputation, err := mb.ReputationList(nil, crypto.Keccak256Hash(address[:]))
+	if err != nil {
+		log.Fatalf("query reputation error:%v", err)
+	}
+
+	return reputation
+
+	//var backend = contract.MinerBook
+	//var contract, err = contract.NewMinerBook(minerbook.MainNetAddress,ethash)
+	//minerbookcontract.
+	//return 0
+}
+
+//TODO:
+func (ethash *REthash) AddReputation(address common.Address, value int) (*types.Transaction, error) {
+	var addr = minerbook.MainNetAddress
+	var abi = contract.MinerBookABI
+	conn, err := ethclient.Dial("\\\\.\\pipe\\geth.ipc")
+	if err != nil {
+		log.Fatalf("Failed to connect to the Ethereum client: %v", err)
+		return nil, err
+	}
+	mb, err := contract.NewMinerBook(addr, conn)
+	if err != nil {
+		log.Fatalf("Failed to instantiate a minerbook contract: %v", err)
+		return nil, err
+	}
+
+	// Create an authorized transactor and spend 1 unicorn
+	auth, err := bind.NewTransactor(strings.NewReader(abi), "123")
+	if err != nil {
+		log.Fatalf("Failed to create authorized transactor: %v", err)
+		return nil, err
+	}
+	tx, err := mb.AddReputation(auth, address[:], value)
+	if err != nil {
+		log.Fatalf("Failed to request minerbook addreputation: %v", err)
+		return nil, err
+	}
+	return tx, nil
+}
+
+//TODO:
+func (ethash *REthash) SubReputation(address common.Address, value int) (*types.Transaction, error) {
+	var addr = minerbook.MainNetAddress
+	var abi = contract.MinerBookABI
+	conn, err := ethclient.Dial("\\\\.\\pipe\\geth.ipc")
+	if err != nil {
+		log.Fatalf("Failed to connect to the Ethereum client: %v", err)
+		return nil, err
+	}
+	mb, err := contract.NewMinerBook(addr, conn)
+	if err != nil {
+		log.Fatalf("Failed to instantiate a minerbook contract: %v", err)
+		return nil, err
+	}
+
+	// Create an authorized transactor and spend 1 unicorn
+	auth, err := bind.NewTransactor(strings.NewReader(abi), "123")
+	if err != nil {
+		log.Fatalf("Failed to create authorized transactor: %v", err)
+		return nil, err
+	}
+	tx, err := mb.SubReputation(auth, address[:], value)
+	if err != nil {
+		log.Fatalf("Failed to request minerbook addreputation: %v", err)
+		return nil, err
+	}
+	return tx, nil
+}
+
 // CalcDifficulty is the difficulty adjustment algorithm. It returns
 // the difficulty that a new block should have when created at time
 // given the parent block's time and difficulty.
-func (ethash *Ethash) CalcDifficulty(chain consensus.ChainReader, time uint64, parent *types.Header) *big.Int {
+func (ethash *REthash) CalcDifficulty(chain consensus.ChainReader, time uint64, parent *types.Header) *big.Int {
 	return CalcDifficulty(chain.Config(), time, parent)
 }
 
@@ -337,6 +461,7 @@ var (
 // makeDifficultyCalculator creates a difficultyCalculator with the given bomb-delay.
 // the difficulty is calculated with Byzantium rules, which differs from Homestead in
 // how uncles affect the calculation
+// TODO: Calculation formula should add the reputation.
 func makeDifficultyCalculator(bombDelay *big.Int) func(time uint64, parent *types.Header) *big.Int {
 	// Note, the calculations below looks at the parent number, which is 1 below
 	// the block number. Thus we remove one from the delay given
@@ -481,14 +606,14 @@ func calcDifficultyFrontier(time uint64, parent *types.Header) *big.Int {
 
 // VerifySeal implements consensus.Engine, checking whether the given block satisfies
 // the PoW difficulty requirements.
-func (ethash *Ethash) VerifySeal(chain consensus.ChainReader, header *types.Header) error {
+func (ethash *REthash) VerifySeal(chain consensus.ChainReader, header *types.Header) error {
 	return ethash.verifySeal(chain, header, false)
 }
 
 // verifySeal checks whether a block satisfies the PoW difficulty requirements,
 // either using the usual ethash cache for it, or alternatively using a full DAG
 // to make remote mining fast.
-func (ethash *Ethash) verifySeal(chain consensus.ChainReader, header *types.Header, fulldag bool) error {
+func (ethash *REthash) verifySeal(chain consensus.ChainReader, header *types.Header, fulldag bool) error {
 	// If we're running a fake PoW, accept any seal as valid
 	if ethash.config.PowMode == ModeFake || ethash.config.PowMode == ModeFullFake {
 		time.Sleep(ethash.fakeDelay)
@@ -544,7 +669,22 @@ func (ethash *Ethash) verifySeal(chain consensus.ChainReader, header *types.Head
 	if !bytes.Equal(header.MixDigest[:], digest) {
 		return errInvalidMixDigest
 	}
-	target := new(big.Int).Div(two256, header.Difficulty)
+
+	//NEW change: add reputation
+	author, err := ethash.Author(header)
+	if err != nil {
+		return fmt.Errorf("invalid Author")
+	}
+	//reputation := ethash.GetReputationByContract(author)
+	reputation := ethash.GetReputationByState(author)
+	//reputation := ethash.state.
+	var target = new(big.Int)
+	if reputation >= 0 {
+		target = new(big.Int).Div(two256, new(big.Int).Sub(header.Difficulty, new(big.Int).SetInt64(reputation*repbase)))
+	} else {
+		target = new(big.Int).Div(two256, new(big.Int).Add(header.Difficulty, new(big.Int).SetInt64(reputation*repbase)))
+	}
+
 	if new(big.Int).SetBytes(result).Cmp(target) > 0 {
 		return errInvalidPoW
 	}
@@ -553,18 +693,23 @@ func (ethash *Ethash) verifySeal(chain consensus.ChainReader, header *types.Head
 
 // Prepare implements consensus.Engine, initializing the difficulty field of a
 // header to conform to the ethash protocol. The changes are done inline.
-func (ethash *Ethash) Prepare(chain consensus.ChainReader, header *types.Header) error {
+func (ethash *REthash) Prepare(chain consensus.ChainReader, header *types.Header) error {
 	parent := chain.GetHeader(header.ParentHash, header.Number.Uint64()-1)
 	if parent == nil {
 		return consensus.ErrUnknownAncestor
 	}
+	//author, err := ethash.Author(header)
+	//if err != nil {
+	//	return fmt.Errorf("invalid Author")
+	//}
+	//authorReputation := GetReputation(author)
 	header.Difficulty = ethash.CalcDifficulty(chain, header.Time.Uint64(), parent)
 	return nil
 }
 
 // Finalize implements consensus.Engine, accumulating the block and uncle rewards,
 // setting the final state and assembling the block.
-func (ethash *Ethash) Finalize(chain consensus.ChainReader, header *types.Header, state *state.StateDB, txs []*types.Transaction, uncles []*types.Header, receipts []*types.Receipt) (*types.Block, error) {
+func (ethash *REthash) Finalize(chain consensus.ChainReader, header *types.Header, state *state.StateDB, txs []*types.Transaction, uncles []*types.Header, receipts []*types.Receipt) (*types.Block, error) {
 	// Accumulate any block and uncle rewards and commit the final state root
 	accumulateRewards(chain.Config(), state, header, uncles)
 	header.Root = state.IntermediateRoot(chain.Config().IsEIP158(header.Number))
@@ -574,7 +719,7 @@ func (ethash *Ethash) Finalize(chain consensus.ChainReader, header *types.Header
 }
 
 // SealHash returns the hash of a block prior to it being sealed.
-func (ethash *Ethash) SealHash(header *types.Header) (hash common.Hash) {
+func (ethash *REthash) SealHash(header *types.Header) (hash common.Hash) {
 	hasher := sha3.NewKeccak256()
 
 	rlp.Encode(hasher, []interface{}{
@@ -602,12 +747,39 @@ var (
 	big32 = big.NewInt(32)
 )
 
+func getReputationRewards(state *state.StateDB, header *types.Header) int64 {
+
+	author := header.Coinbase
+	authorString := author.String()
+	authorAcount := 0
+	parentHeader := new(types.Header)
+
+	conn, _ := ethclient.Dial("\\\\.\\pipe\\geth.ipc")
+	//ctx := context.Background()
+
+	parentHeader = header
+	for i := 0; i < reputationFrontierBlockCount; i++ {
+		parentHeader, _ = conn.HeaderByHash(nil, parentHeader.ParentHash)
+		iString := parentHeader.Coinbase.String()
+		if strings.Compare(authorString, iString) == 0 {
+			authorAcount += 1
+		}
+	}
+
+	repCurrent := int(state.GetReputation(author))
+	repReward := (1 - (authorAcount / reputationFrontierBlockCount)) * (1000 - repCurrent) / reputationFormulaOptimizeParam
+
+	return int64(repReward)
+}
+
 // AccumulateRewards credits the coinbase of the given block with the mining
 // reward. The total reward consists of the static block reward and rewards for
 // included uncles. The coinbase of each uncle block is also rewarded.
+// TODO: updated reputation
 func accumulateRewards(config *params.ChainConfig, state *state.StateDB, header *types.Header, uncles []*types.Header) {
 	// Select the correct block reward based on chain progression
 	blockReward := FrontierBlockReward
+	//blockReputationReward := FrontierBlockReputationReward
 	if config.IsByzantium(header.Number) {
 		blockReward = ByzantiumBlockReward
 	}
@@ -616,7 +788,9 @@ func accumulateRewards(config *params.ChainConfig, state *state.StateDB, header 
 	}
 	// Accumulate the rewards for the miner and any included uncles
 	reward := new(big.Int).Set(blockReward)
+
 	r := new(big.Int)
+	//rr := 0
 	for _, uncle := range uncles {
 		r.Add(uncle.Number, big8)
 		r.Sub(r, header.Number)
@@ -627,6 +801,18 @@ func accumulateRewards(config *params.ChainConfig, state *state.StateDB, header 
 		r.Div(blockReward, big32)
 		reward.Add(reward, r)
 
+		// accumulate the reputation rewards
+		//rr.Add(uncle.Number, big8)
+		//rr.Sub(rr, header.Number)
+		//rr.Mul(rr, blockReputationReward)
+		//rr.Div(rr, big8)
+		//state.AddReputation(uncle.Coinbase, rr)
+		//
+		//rr.Div(blockReputationReward, big32)
+		//rreward.Add(rreward, rr)
 	}
 	state.AddBalance(header.Coinbase, reward)
+
+	repReward := getReputationRewards(state, header)
+	state.AddReputation(header.Coinbase, repReward)
 }

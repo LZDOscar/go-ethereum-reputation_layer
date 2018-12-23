@@ -25,6 +25,7 @@ var (
 	ErrDepth                    = errors.New("max call depth exceeded")
 	ErrTraceLimitReached        = errors.New("the number of logs reached the specified limit")
 	ErrInsufficientBalance      = errors.New("insufficient balance for transfer")
+	ErrInsufficientReputation   = errors.New("insufficient reputation for transfer")
 	ErrContractAddressCollision = errors.New("contract address collision")
 	ErrNoCompatibleInterpreter  = errors.New("no compatible interpreter")
 )

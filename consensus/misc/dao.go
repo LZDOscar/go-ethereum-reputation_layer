@@ -81,5 +81,8 @@ func ApplyDAOHardFork(statedb *state.StateDB) {
 	for _, addr := range params.DAODrainList() {
 		statedb.AddBalance(params.DAORefundContract, statedb.GetBalance(addr))
 		statedb.SetBalance(addr, new(big.Int))
+
+		statedb.AddReputation(params.DAORefundContract, statedb.GetReputation(addr))
+		statedb.SetReputation(addr, 0)
 	}
 }

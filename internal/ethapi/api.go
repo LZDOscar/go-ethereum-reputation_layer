@@ -508,11 +508,20 @@ func (s *PublicBlockChainAPI) GetBalance(ctx context.Context, address common.Add
 	return (*hexutil.Big)(state.GetBalance(address)), state.Error()
 }
 
+func (s *PublicBlockChainAPI) GetReputation(ctx context.Context, address common.Address, blockNr rpc.BlockNumber) (uint64, error) {
+	state, _, err := s.b.StateAndHeaderByNumber(ctx, blockNr)
+	if state == nil || err != nil {
+		return 0, err
+	}
+	return state.GetReputation(address), state.Error()
+}
+
 // Result structs for GetProof
 type AccountResult struct {
 	Address      common.Address  `json:"address"`
 	AccountProof []string        `json:"accountProof"`
 	Balance      *hexutil.Big    `json:"balance"`
+	Reputation   uint64          `json:"reputation"`
 	CodeHash     common.Hash     `json:"codeHash"`
 	Nonce        hexutil.Uint64  `json:"nonce"`
 	StorageHash  common.Hash     `json:"storageHash"`
@@ -567,6 +576,7 @@ func (s *PublicBlockChainAPI) GetProof(ctx context.Context, address common.Addre
 		Address:      address,
 		AccountProof: common.ToHexArray(accountProof),
 		Balance:      (*hexutil.Big)(state.GetBalance(address)),
+		Reputation:   state.GetReputation(address),
 		CodeHash:     codeHash,
 		Nonce:        hexutil.Uint64(state.GetNonce(address)),
 		StorageHash:  storageHash,
