@@ -13,10 +13,8 @@ import (
 )
 
 //MinerBookABI is the input ABI used to generate the binding from.
-const MinerBookABI = "[{\"anonymous\": false,\"inputs\": [{\"indexed\": true,\"name\": \"hashedPubkey\",\"type\": \"bytes32\"},{\"indexed\": true, \"name\": \"withdrawalAddressbytes32\", \"type\": \"address\"},{\"indexed\": true, \"name\": \"randaoCommitment\", \"type\": \"bytes32\"}], \"name\": \"MinerRegistered\", \"type\": \"event\"},{\"constant\": false, \"inputs\": [{\"name\": \"_pubkey\", \"type\": \"bytes\"},{\"name\": \"_withdrawalAddressbytes32\", \"type\": \"address\"},{\"name\": \"_randaoCommitment\", \"type\": \"bytes32\"}], \"name\": \"register\", \"outputs\": [], \"payable\": true, \"stateMutability\": \"payable\",\"type\": \"function\"},{\"constant\": true, \"inputs\": [], \"name\": \"MINER_ADMISSION\", \"outputs\": [{\"name\": \"\", \"type\": \"uint256\"}], \"payable\": false, \"stateMutability\": \"view\", \"type\": \"function\"},{\"constant\": true, \"inputs\": [{\"name\": \"\", \"type\": \"bytes32\"}], \"name\": \"usedHashedPubkey\", \"outputs\": [{\"name\": \"\", \"type\": \"bool\"}], \"payable\": false, \"stateMutability\": \"view\", \"type\": \"function\"}]"
-
-//MinerBookBin is the compiled bytecode used for deploying new contracts.
-const MinerBookBin = `608060405234801561001057600080fd5b50610401806100206000396000f3fe608060405260043610610050577c01000000000000000000000000000000000000000000000000000000006000350463209bab0881146100555780638618d7781461007c578063930a6539146100ba575b600080fd5b34801561006157600080fd5b5061006a61017d565b60408051918252519081900360200190f35b34801561008857600080fd5b506100a66004803603602081101561009f57600080fd5b503561018a565b604080519115158252519081900360200190f35b61017b600480360360608110156100d057600080fd5b8101906020810181356401000000008111156100eb57600080fd5b8201836020820111156100fd57600080fd5b8035906020019184600183028401116401000000008311171561011f57600080fd5b91908080601f0160208091040260200160405190810160405280939291908181526020018383808284376000920191909152509295505073ffffffffffffffffffffffffffffffffffffffff833516935050506020013561019f565b005b6801bc16d674ec80000081565b60006020819052908152604090205460ff1681565b346801bc16d674ec8000001461021657604080517f08c379a000000000000000000000000000000000000000000000000000000000815260206004820152601960248201527f496e636f7272656374206d696e65722061646d697373696f6e00000000000000604482015290519081900360640190fd5b825160301461028657604080517f08c379a000000000000000000000000000000000000000000000000000000000815260206004820152601a60248201527f5075626c6963206b6579206973206e6f74203438206279746573000000000000604482015290519081900360640190fd5b6000836040516020018082805190602001908083835b602083106102bb5780518252601f19909201916020918201910161029c565b51815160209384036101000a60001901801990921691161790526040805192909401828103601f190183528452815191810191909120600081815291829052929020549194505060ff16159150610375905057604080517f08c379a000000000000000000000000000000000000000000000000000000000815260206004820152601760248201527f5075626c6963206b657920616c72656164792075736564000000000000000000604482015290519081900360640190fd5b600081815260208190526040808220805460ff1916600117905551839173ffffffffffffffffffffffffffffffffffffffff86169184917fe64a07a1b5d850fa4668b6f2243f96f9002d7f4bb5ad61a0b5cbec94cbd7d5ff91a45050505056fea165627a7a723058203d0f3db4e9676752c9dc1be83c174f7e40aff140194a455f99dddadd9c8293e00029`
+const MinerBookABI = "[{\"constant\":true,\"inputs\":[],\"name\":\"REPUTATION_HIGHLIMIT\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"MINER_ADMISSION\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"REPUTATION_LOWLIMIT\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"REPUTATION_INIT\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_pubkey\",\"type\":\"address\"}],\"name\":\"deregister\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"address\"}],\"name\":\"reputationList\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"address\"}],\"name\":\"withdrawAddrs\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_pubkey\",\"type\":\"address\"},{\"name\":\"_withdrawalAddressbytes48\",\"type\":\"address\"}],\"name\":\"register\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"address\"}],\"name\":\"usedHashedPubkey\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"address\"}],\"name\":\"reputationBlackList\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"hashedPubkey\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"withdrawalAddressbytes48\",\"type\":\"address\"}],\"name\":\"MinerRegistered\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"hashedPubkey\",\"type\":\"address\"}],\"name\":\"MinerDeRegistered\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"hashedPubkey\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"reputation\",\"type\":\"uint256\"}],\"name\":\"ReputationAdded\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"hashedPubkey\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"reputation\",\"type\":\"uint256\"}],\"name\":\"ReputationSubed\",\"type\":\"event\"}]"
+const MinerBookBin = `0x608060405234801561001057600080fd5b50610560806100206000396000f3fe6080604052600436106100ae576000357c0100000000000000000000000000000000000000000000000000000000900480638a3b34a5116100765780638a3b34a51461012c5780639a73a3b51461015f578063aa677354146101ae578063dd4e5d13146101dc578063fd1f473c14610223576100ae565b80631ccb00e7146100b3578063209bab08146100da5780632cb59fe6146100da57806363e8499c146100ef57806384ac33ec14610104575b600080fd5b3480156100bf57600080fd5b506100c8610256565b60408051918252519081900360200190f35b3480156100e657600080fd5b506100c861025c565b3480156100fb57600080fd5b506100c8610261565b61012a6004803603602081101561011a57600080fd5b5035600160a060020a0316610267565b005b34801561013857600080fd5b506100c86004803603602081101561014f57600080fd5b5035600160a060020a0316610390565b34801561016b57600080fd5b506101926004803603602081101561018257600080fd5b5035600160a060020a03166103a2565b60408051600160a060020a039092168252519081900360200190f35b61012a600480360360408110156101c457600080fd5b50600160a060020a03813581169160200135166103bd565b3480156101e857600080fd5b5061020f600480360360208110156101ff57600080fd5b5035600160a060020a031661050a565b604080519115158252519081900360200190f35b34801561022f57600080fd5b5061020f6004803603602081101561024657600080fd5b5035600160a060020a031661051f565b6107d081565b600081565b6103e881565b33600160a060020a038216146102c7576040805160e560020a62461bcd02815260206004820152601960248201527f496e636f7272656374206d696e65722061646d697373696f6e00000000000000604482015290519081900360640190fd5b600160a060020a038116600090815260208190526040902054819060ff16151561033b576040805160e560020a62461bcd02815260206004820152601660248201527f5075626c6963206b6579206973206e6f74207573656400000000000000000000604482015290519081900360640190fd5b600160a060020a038116600081815260208181526040808320805460ff191690556002909152808220829055517f58aa9ecbe6149ee13276eb8abe67e7c3f422c0a1a90c57dde0bf118664a9dda29190a25050565b60026020526000908152604090205481565b600160205260009081526040902054600160a060020a031681565b3415610413576040805160e560020a62461bcd02815260206004820152601960248201527f496e636f7272656374206d696e65722061646d697373696f6e00000000000000604482015290519081900360640190fd5b600160a060020a038216600090815260208190526040902054829060ff1615610486576040805160e560020a62461bcd02815260206004820152601760248201527f5075626c6963206b657920616c72656164792075736564000000000000000000604482015290519081900360640190fd5b600160a060020a03808216600081815260208181526040808320805460ff191660019081179091558252808320805495881673ffffffffffffffffffffffffffffffffffffffff19909616861790556002909152808220829055517fb90c06d0bb2c3934635f60c7418204feae8b8f21b5e030ccf695cb6cec37fe159190a3505050565b60006020819052908152604090205460ff1681565b60036020526000908152604090205460ff168156fea165627a7a72305820ebda2c40b96a99f8103b70bf1ff623da7bc27a606f18250583ca4c65020059ae0029`
 
 // DeployMinerBook deploys a new Ethereum contract, binding an instance of MinerBook to it.
 func DeployMinerBook(auth *bind.TransactOpts, backend bind.ContractBackend) (common.Address, *types.Transaction, *MinerBook, error) {
@@ -228,9 +226,9 @@ func (_MinerBook *MinerBookCallerSession) UsedHashedPubkey(arg0 common.Address) 
 // reputationList is a paid mutator transaction binding the contract method 0xfbf788d6.
 //
 // Solidity: function reputationList(bytes48) constant returns(bool)
-func (_MinerBook *MinerBookCaller) ReputationList(opts *bind.CallOpts, arg0 common.Address) (int64, error) {
+func (_MinerBook *MinerBookCaller) ReputationList(opts *bind.CallOpts, arg0 common.Address) (uint64, error) {
 	var (
-		ret0 = new(int64)
+		ret0 = new(uint64)
 	)
 	out := ret0
 	err := _MinerBook.contract.Call(opts, out, "reputationList", arg0)
@@ -240,14 +238,14 @@ func (_MinerBook *MinerBookCaller) ReputationList(opts *bind.CallOpts, arg0 comm
 // reputationList is a paid mutator transaction binding the contract method 0xfbf788d6.
 //
 // Solidity: function reputationList(bytes48) constant returns(bool)
-func (_MinerBook *MinerBookSession) ReputationList(arg0 common.Address) (int64, error) {
+func (_MinerBook *MinerBookSession) ReputationList(arg0 common.Address) (uint64, error) {
 	return _MinerBook.Contract.ReputationList(&_MinerBook.CallOpts, arg0)
 }
 
 // reputationList is a paid mutator transaction binding the contract method 0xfbf788d6.
 //
 // Solidity: function reputationList(bytes48) constant returns(bool)
-func (_MinerBook *MinerBookCallerSession) ReputationList(arg0 common.Address) (int64, error) {
+func (_MinerBook *MinerBookCallerSession) ReputationList(arg0 common.Address) (uint64, error) {
 	return _MinerBook.Contract.ReputationList(&_MinerBook.CallOpts, arg0)
 }
 
@@ -277,63 +275,84 @@ func (_MinerBook *MinerBookCallerSession) GetMiners() (map[common.Address]bool, 
 // Register is a paid mutator transaction binding the contract method 0x41c0e1b5.
 //
 // Solidity: Register (_pubkey bytes, _withdrawalAddressbytes48 address, _randaoCommitment bytes48) returns()
-func (_MinerBook *MinerBookTransactor) Register(opts *bind.TransactOpts, _pubkey []byte, _withdrawalAddressbytes48 common.Address, _randaoCommitment [48]byte) (*types.Transaction, error) {
-	return _MinerBook.contract.Transact(opts, "register", _pubkey, _withdrawalAddressbytes48, _randaoCommitment)
+func (_MinerBook *MinerBookTransactor) Register(opts *bind.TransactOpts, _pubkey common.Address, _withdrawalAddressbytes48 common.Address) (*types.Transaction, error) {
+	return _MinerBook.contract.Transact(opts, "register", _pubkey, _withdrawalAddressbytes48)
 }
 
 // Register is a paid mutator transaction binding the contract method 0x41c0e1b5.
 //
 // Solidity: Register (_pubkey bytes, _withdrawalAddressbytes48 address, _randaoCommitment bytes48) returns()
-func (_MinerBook *MinerBookSession) Register(_pubkey []byte, _withdrawalAddressbytes48 common.Address, _randaoCommitment [48]byte) (*types.Transaction, error) {
-	return _MinerBook.Contract.Register(&_MinerBook.TransactOpts, _pubkey, _withdrawalAddressbytes48, _randaoCommitment)
+func (_MinerBook *MinerBookSession) Register(_pubkey common.Address, _withdrawalAddressbytes48 common.Address) (*types.Transaction, error) {
+	return _MinerBook.Contract.Register(&_MinerBook.TransactOpts, _pubkey, _withdrawalAddressbytes48)
 }
 
 // Register is a paid mutator transaction binding the contract method 0x41c0e1b5.
 //
 // Solidity: Register (_pubkey bytes, _withdrawalAddressbytes48 address, _randaoCommitment bytes48) returns()
-func (_MinerBook *MinerBookTransactorSession) Register(_pubkey []byte, _withdrawalAddressbytes48 common.Address, _randaoCommitment [48]byte) (*types.Transaction, error) {
-	return _MinerBook.Contract.Register(&_MinerBook.TransactOpts, _pubkey, _withdrawalAddressbytes48, _randaoCommitment)
+func (_MinerBook *MinerBookTransactorSession) Register(_pubkey common.Address, _withdrawalAddressbytes48 common.Address) (*types.Transaction, error) {
+	return _MinerBook.Contract.Register(&_MinerBook.TransactOpts, _pubkey, _withdrawalAddressbytes48)
+}
+
+// DeRegister is a paid mutator transaction binding the contract method 0x41c0e1b5.
+//
+// Solidity: DeRegister (_pubkey bytes, _withdrawalAddressbytes48 address, _randaoCommitment bytes48) returns()
+func (_MinerBook *MinerBookTransactor) DeRegister(opts *bind.TransactOpts, _pubkey common.Address) (*types.Transaction, error) {
+	return _MinerBook.contract.Transact(opts, "deregister", _pubkey)
+}
+
+// DeRegister is a paid mutator transaction binding the contract method 0x41c0e1b5.
+//
+// Solidity: DeRegister (_pubkey bytes, _withdrawalAddressbytes48 address, _randaoCommitment bytes48) returns()
+func (_MinerBook *MinerBookSession) DeRegister(_pubkey common.Address) (*types.Transaction, error) {
+	return _MinerBook.Contract.DeRegister(&_MinerBook.TransactOpts, _pubkey)
+}
+
+// DeRegister is a paid mutator transaction binding the contract method 0x41c0e1b5.
+//
+// Solidity: DeRegister (_pubkey bytes, _withdrawalAddressbytes48 address, _randaoCommitment bytes48) returns()
+func (_MinerBook *MinerBookTransactorSession) DeRegister(_pubkey common.Address) (*types.Transaction, error) {
+	return _MinerBook.Contract.DeRegister(&_MinerBook.TransactOpts, _pubkey)
 }
 
 // addReputation is a paid mutator transaction binding the contract method 0x41c0e1b5.
 //
 // Solidity: addReputation (_pubkey bytes, _withdrawalAddressbytes48 address, _randaoCommitment bytes48) returns()
-func (_MinerBook *MinerBookSession) AddReputation(_pubkey []byte, _value int) (*types.Transaction, error) {
+func (_MinerBook *MinerBookSession) AddReputation(_pubkey []byte, _value uint64) (*types.Transaction, error) {
 	return _MinerBook.Contract.AddReputation(&_MinerBook.TransactOpts, _pubkey, _value)
 }
 
 // addReputation is a paid mutator transaction binding the contract method 0x41c0e1b5.
 //
 // Solidity: addReputation (_pubkey bytes, _withdrawalAddressbytes48 address, _randaoCommitment bytes48) returns()
-func (_MinerBook *MinerBookTransactorSession) AddReputation(_pubkey []byte, _value int) (*types.Transaction, error) {
+func (_MinerBook *MinerBookTransactorSession) AddReputation(_pubkey []byte, _value uint64) (*types.Transaction, error) {
 	return _MinerBook.Contract.AddReputation(&_MinerBook.TransactOpts, _pubkey, _value)
 }
 
 // addReputation is a paid mutator transaction binding the contract method 0x41c0e1b5.
 //
 // Solidity: addReputation (_pubkey bytes, _withdrawalAddressbytes48 address, _randaoCommitment bytes48) returns()
-func (_MinerBook *MinerBookTransactor) AddReputation(opts *bind.TransactOpts, _pubkey []byte, _value int) (*types.Transaction, error) {
+func (_MinerBook *MinerBookTransactor) AddReputation(opts *bind.TransactOpts, _pubkey []byte, _value uint64) (*types.Transaction, error) {
 	return _MinerBook.contract.Transact(opts, "addReputation", _pubkey, _value)
 }
 
 // SubReputation is a paid mutator transaction binding the contract method 0x41c0e1b5.
 //
 // Solidity: SubReputation (_pubkey bytes, _withdrawalAddressbytes48 address, _randaoCommitment bytes48) returns()
-func (_MinerBook *MinerBookSession) SubReputation(_pubkey []byte, _value int) (*types.Transaction, error) {
+func (_MinerBook *MinerBookSession) SubReputation(_pubkey []byte, _value uint64) (*types.Transaction, error) {
 	return _MinerBook.Contract.SubReputation(&_MinerBook.TransactOpts, _pubkey, _value)
 }
 
 // SubReputation is a paid mutator transaction binding the contract method 0x41c0e1b5.
 //
 // Solidity: SubReputation (_pubkey bytes, _withdrawalAddressbytes48 address, _randaoCommitment bytes48) returns()
-func (_MinerBook *MinerBookTransactorSession) SubReputation(_pubkey []byte, _value int) (*types.Transaction, error) {
+func (_MinerBook *MinerBookTransactorSession) SubReputation(_pubkey []byte, _value uint64) (*types.Transaction, error) {
 	return _MinerBook.Contract.SubReputation(&_MinerBook.TransactOpts, _pubkey, _value)
 }
 
 // SubReputation is a paid mutator transaction binding the contract method 0x41c0e1b5.
 //
 // Solidity: SubReputation (_pubkey bytes, _withdrawalAddressbytes48 address, _randaoCommitment bytes48) returns()
-func (_MinerBook *MinerBookTransactor) SubReputation(opts *bind.TransactOpts, _pubkey []byte, _value int) (*types.Transaction, error) {
+func (_MinerBook *MinerBookTransactor) SubReputation(opts *bind.TransactOpts, _pubkey []byte, _value uint64) (*types.Transaction, error) {
 	return _MinerBook.contract.Transact(opts, "subReputation", _pubkey, _value)
 }
 
@@ -406,16 +425,16 @@ func (it *MinerBookMinerRegisteredIterator) Close() error {
 
 // MinerBookOverdraft represents a Overdraft event raised by the MinerBook contract.
 type MinerBookMinerRegistered struct {
-	HashedPubkey             [48]byte
+	HashedPubkey             common.Address
 	WithdrawalAddressbytes48 common.Address
-	RandaoCommitment         [48]byte
-	Raw                      types.Log // Blockchain specific contextual infos
+	//RandaoCommitment         [48]byte
+	Raw types.Log // Blockchain specific contextual infos
 }
 
 // FilterMinerRegistered is a free log retrieval operation binding the contract event 0x2250e2993c15843b48621c89447cc589ee7a9f049c026986e545d3c2c0c6f978.
 //
 // Solidity: event MinerRegistered(hashedPubkey indexed bytes48, withdrawalAddressbytes48 indexed address, randaoCommitment indexed bytes48)
-func (_MinerBook *MinerBookFilterer) FilterMinerRegistered(opts *bind.FilterOpts, hashedPubkey [][48]byte, withdrawalAddressbytes48 []common.Address, randaoCommitment [][48]byte) (*MinerBookMinerRegisteredIterator, error) {
+func (_MinerBook *MinerBookFilterer) FilterMinerRegistered(opts *bind.FilterOpts, hashedPubkey []common.Address, withdrawalAddressbytes48 []common.Address) (*MinerBookMinerRegisteredIterator, error) {
 
 	var hashedPubkeyRule []interface{}
 	for _, hashedPubkeyItem := range hashedPubkey {
@@ -427,12 +446,12 @@ func (_MinerBook *MinerBookFilterer) FilterMinerRegistered(opts *bind.FilterOpts
 		withdrawalAddressbytes48Rule = append(withdrawalAddressbytes48Rule, withdrawalAddressbytes48Item)
 	}
 
-	var randaoCommitmentRule []interface{}
-	for _, randaoCommitmentItem := range randaoCommitment {
-		randaoCommitmentRule = append(randaoCommitmentRule, randaoCommitmentItem)
-	}
+	//var randaoCommitmentRule []interface{}
+	//for _, randaoCommitmentItem := range randaoCommitment {
+	//	randaoCommitmentRule = append(randaoCommitmentRule, randaoCommitmentItem)
+	//}
 
-	logs, sub, err := _MinerBook.contract.FilterLogs(opts, "MinerRegistered", hashedPubkeyRule, withdrawalAddressbytes48Rule, randaoCommitmentRule)
+	logs, sub, err := _MinerBook.contract.FilterLogs(opts, "MinerRegistered", hashedPubkeyRule, withdrawalAddressbytes48Rule)
 	if err != nil {
 		return nil, err
 	}
@@ -443,7 +462,7 @@ func (_MinerBook *MinerBookFilterer) FilterMinerRegistered(opts *bind.FilterOpts
 // WatchMinerRegistered is a free log subscription operation binding the contract event 0x2250e2993c15843b48621c89447cc589ee7a9f049c026986e545d3c2c0c6f978.
 //
 // Solidity: event MinerRegistered(hashedPubkey indexed bytes48, withdrawalAddressbytes48 indexed address, randaoCommitment indexed bytes48)
-func (_MinerBook *MinerBookFilterer) WatchMinerRegistered(opts *bind.WatchOpts, sink chan<- *MinerBookMinerRegistered, hashedPubkey [][48]byte, withdrawalAddressbytes48 []common.Address, randaoCommitment [][48]byte) (event.Subscription, error) {
+func (_MinerBook *MinerBookFilterer) WatchMinerRegistered(opts *bind.WatchOpts, sink chan<- *MinerBookMinerRegistered, hashedPubkey []common.Address, withdrawalAddressbytes48 []common.Address) (event.Subscription, error) {
 
 	var hashedPubkeyRule []interface{}
 	for _, hashedPubkeyItem := range hashedPubkey {
@@ -455,12 +474,12 @@ func (_MinerBook *MinerBookFilterer) WatchMinerRegistered(opts *bind.WatchOpts, 
 		withdrawalAddressbytes48Rule = append(withdrawalAddressbytes48Rule, withdrawalAddressbytes48Item)
 	}
 
-	var randaoCommitmentRule []interface{}
-	for _, randaoCommitmentItem := range randaoCommitment {
-		randaoCommitmentRule = append(randaoCommitmentRule, randaoCommitmentItem)
-	}
+	//var randaoCommitmentRule []interface{}
+	//for _, randaoCommitmentItem := range randaoCommitment {
+	//	randaoCommitmentRule = append(randaoCommitmentRule, randaoCommitmentItem)
+	//}
 
-	logs, sub, err := _MinerBook.contract.WatchLogs(opts, "MinerRegistered", hashedPubkeyRule, withdrawalAddressbytes48Rule, randaoCommitmentRule)
+	logs, sub, err := _MinerBook.contract.WatchLogs(opts, "MinerRegistered", hashedPubkeyRule, withdrawalAddressbytes48Rule)
 	if err != nil {
 		return nil, err
 	}

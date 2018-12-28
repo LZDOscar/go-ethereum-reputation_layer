@@ -29,6 +29,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/core/rawdb"
+	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/log"
@@ -439,6 +440,10 @@ func (hc *HeaderChain) GetHeaderByNumber(number uint64) *types.Header {
 // header is retrieved from the HeaderChain's internal cache.
 func (hc *HeaderChain) CurrentHeader() *types.Header {
 	return hc.currentHeader.Load().(*types.Header)
+}
+
+func (hc *HeaderChain) State() (*state.StateDB, error) {
+	return nil, nil
 }
 
 // SetCurrentHeader sets the current head header of the canonical chain.

@@ -105,7 +105,7 @@ type (
 	}
 	reputationChange struct {
 		account *common.Address
-		prev    int64
+		prev    uint64
 	}
 	nonceChange struct {
 		account *common.Address

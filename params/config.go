@@ -112,7 +112,7 @@ var (
 	// This configuration is intentionally not using keyed fields to force anyone
 	// adding flags to the config to also have to set these fields.
 	AllEthashProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, new(EthashConfig), nil}
-
+	//AllREthashProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, nil,new(REthashConfig)}
 	// AllCliqueProtocolChanges contains every protocol change (EIPs) introduced
 	// and accepted by the Ethereum core developers into the Clique consensus.
 	//
@@ -163,6 +163,7 @@ type ChainConfig struct {
 	// Various consensus engines
 	Ethash *EthashConfig `json:"ethash,omitempty"`
 	Clique *CliqueConfig `json:"clique,omitempty"`
+	//REthash *REthashConfig `json:"rethash,omitempty"`
 }
 
 // EthashConfig is the consensus engine configs for proof-of-work based sealing.
@@ -172,6 +173,15 @@ type EthashConfig struct{}
 func (c *EthashConfig) String() string {
 	return "ethash"
 }
+
+//
+//// EthashConfig is the consensus engine configs for proof-of-work based sealing.
+//type REthashConfig struct{}
+//
+//// String implements the stringer interface, returning the consensus engine details.
+//func (c *REthashConfig) String() string {
+//	return "rethash"
+//}
 
 // CliqueConfig is the consensus engine configs for proof-of-authority based sealing.
 type CliqueConfig struct {

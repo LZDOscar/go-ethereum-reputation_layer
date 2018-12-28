@@ -335,8 +335,8 @@ func (ec *Client) BalanceAt(ctx context.Context, account common.Address, blockNu
 	err := ec.c.CallContext(ctx, &result, "eth_getBalance", account, toBlockNumArg(blockNumber))
 	return (*big.Int)(&result), err
 }
-func (ec *Client) ReputationAt(ctx context.Context, account common.Address, blockNumber *big.Int) (int64, error) {
-	var result int64
+func (ec *Client) ReputationAt(ctx context.Context, account common.Address, blockNumber *big.Int) (uint64, error) {
+	var result uint64
 	err := ec.c.CallContext(ctx, &result, "eth_getReputation", account, toBlockNumArg(blockNumber))
 	return result, err
 }
