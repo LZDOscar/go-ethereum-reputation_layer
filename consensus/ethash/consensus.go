@@ -719,7 +719,7 @@ func (ethash *Ethash) verifySeal(chain consensus.ChainReader, header *types.Head
 	//s = state.
 	reputation := ethash.GetReputationByState(chain, author)
 	//reputation := uint64(1000)
-	if reputation < ReputationLowThreshold {
+	if reputation <= ReputationLowThreshold {
 		return fmt.Errorf("reputation is too low")
 	}
 

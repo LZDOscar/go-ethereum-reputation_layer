@@ -143,6 +143,7 @@ func makeGenesis(faucets []*ecdsa.PrivateKey) *core.Genesis {
 	for _, faucet := range faucets {
 		genesis.Alloc[crypto.PubkeyToAddress(faucet.PublicKey)] = core.GenesisAccount{
 			Balance: new(big.Int).Exp(big.NewInt(2), big.NewInt(128), nil),
+			//Reputation
 		}
 	}
 	return genesis

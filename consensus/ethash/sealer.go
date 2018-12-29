@@ -29,6 +29,7 @@ import (
 	"sync"
 	"time"
 
+	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/consensus"
@@ -63,6 +64,11 @@ func (ethash *Ethash) Seal(chain consensus.ChainReader, block *types.Block, resu
 	// If we're running a shared PoW, delegate sealing to it
 	if ethash.shared != nil {
 		return ethash.shared.Seal(chain, block, results, stop)
+	}
+
+	reputation := ethash.GetReputationByState(chain, block.Header().Coinbase)
+	if reputation <= ReputationLowThreshold {
+		return fmt.Errorf("this account is not a miner, you need to register! account: %s", block.Header().Coinbase.String())
 	}
 	// Create a runner and the multiple search threads it directs
 	abort := make(chan struct{})
