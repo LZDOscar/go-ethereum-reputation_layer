@@ -721,13 +721,16 @@ func (ethash *Ethash) verifySeal(chain consensus.ChainReader, header *types.Head
 	if reputation < ReputationLowThreshold {
 		return fmt.Errorf("reputation is too low")
 	}
+
+	//target  := new(big.Int).Div(two256, header.Difficulty)
 	//reputation := ethash.state.
-	var target = new(big.Int)
+	var target = new(big.Int).SetInt64(0)
 	if reputation >= ReputationInit {
 		target = new(big.Int).Div(two256, new(big.Int).Sub(header.Difficulty, new(big.Int).SetUint64((reputation-ReputationInit)*repbase)))
 	} else {
 		target = new(big.Int).Div(two256, new(big.Int).Add(header.Difficulty, new(big.Int).SetUint64((ReputationInit-reputation)*repbase)))
 	}
+	println(target.String())
 
 	if new(big.Int).SetBytes(result).Cmp(target) > 0 {
 		return errInvalidPoW

@@ -134,7 +134,7 @@ func (ethash *Ethash) mine(chain consensus.ChainReader, block *types.Block, id i
 	var (
 		header  = block.Header()
 		hash    = ethash.SealHash(header).Bytes()
-		target  = new(big.Int)
+		target  = new(big.Int).SetInt64(0)
 		number  = header.Number.Uint64()
 		dataset = ethash.dataset(number, false)
 	)
@@ -155,7 +155,7 @@ func (ethash *Ethash) mine(chain consensus.ChainReader, block *types.Block, id i
 	} else {
 		target = new(big.Int).Div(two256, new(big.Int).Add(header.Difficulty, new(big.Int).SetUint64((reputation-ReputationInit)*repbase)))
 	}
-
+	println(target.String())
 	// Start generating random nonces until we abort or find a good one
 	var (
 		attempts = int64(0)
