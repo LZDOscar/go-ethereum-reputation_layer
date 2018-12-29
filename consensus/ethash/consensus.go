@@ -352,13 +352,14 @@ func (ethash *Ethash) GetReputationByState(chain consensus.ChainReader, address 
 	//conn, _ := ethclient.Dial("\\\\.\\pipe\\geth.ipc")
 	//reputation, _ := conn.ReputationAt(nil, address, nil)
 	//println(chain)
+	// when chain is nil, used to testing, return init reputation = 1000
 	if chain == nil {
-		return 0
+		return 1000
 	}
-	s, err := chain.State()
-	if err != nil {
-		return 0
-	}
+	s, _ := chain.State()
+	//if err != nil {
+	//	return 0
+	//}
 	repCurrent := (s.GetReputation(address))
 	return repCurrent
 }
@@ -730,7 +731,7 @@ func (ethash *Ethash) verifySeal(chain consensus.ChainReader, header *types.Head
 	} else {
 		target = new(big.Int).Div(two256, new(big.Int).Add(header.Difficulty, new(big.Int).SetUint64((ReputationInit-reputation)*repbase)))
 	}
-	println(target.String())
+	//println(target.String())
 
 	if new(big.Int).SetBytes(result).Cmp(target) > 0 {
 		return errInvalidPoW
