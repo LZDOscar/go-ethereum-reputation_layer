@@ -212,12 +212,12 @@ func (self *StateDB) GetBalance(addr common.Address) *big.Int {
 	return common.Big0
 }
 
-func (self *StateDB) GetReputation(addr common.Address) int64 {
+func (self *StateDB) GetReputation(addr common.Address) uint64 {
 	stateObject := self.getStateObject(addr)
 	if stateObject != nil {
 		return stateObject.Reputation()
 	}
-	return 0
+	return uint64(0)
 }
 
 func (self *StateDB) GetNonce(addr common.Address) uint64 {
@@ -347,25 +347,25 @@ func (self *StateDB) SetBalance(addr common.Address, amount *big.Int) {
 	}
 }
 
-func (self *StateDB) AddReputation(addr common.Address, reeputation int64) {
+func (self *StateDB) AddReputation(addr common.Address, reputation uint64) {
 	stateObject := self.GetOrNewStateObject(addr)
 	if stateObject != nil {
-		stateObject.AddReputation(reeputation)
+		stateObject.AddReputation(reputation)
 	}
 }
 
 // SubBalance subtracts amount from the account associated with addr.
-func (self *StateDB) SubReputation(addr common.Address, reeputation int64) {
+func (self *StateDB) SubReputation(addr common.Address, reputation uint64) {
 	stateObject := self.GetOrNewStateObject(addr)
 	if stateObject != nil {
-		stateObject.SubReputation(reeputation)
+		stateObject.SubReputation(reputation)
 	}
 }
 
-func (self *StateDB) SetReputation(addr common.Address, reeputation int64) {
+func (self *StateDB) SetReputation(addr common.Address, reputation uint64) {
 	stateObject := self.GetOrNewStateObject(addr)
 	if stateObject != nil {
-		stateObject.SetReputation(reeputation)
+		stateObject.SetReputation(reputation)
 	}
 }
 
@@ -401,12 +401,14 @@ func (self *StateDB) Suicide(addr common.Address) bool {
 		return false
 	}
 	self.journal.append(suicideChange{
-		account:     &addr,
-		prev:        stateObject.suicided,
-		prevbalance: new(big.Int).Set(stateObject.Balance()),
+		account:        &addr,
+		prev:           stateObject.suicided,
+		prevbalance:    new(big.Int).Set(stateObject.Balance()),
+		prevreputation: stateObject.Reputation(),
 	})
 	stateObject.markSuicided()
 	stateObject.data.Balance = new(big.Int)
+	stateObject.data.Reputation = 0
 
 	return true
 }

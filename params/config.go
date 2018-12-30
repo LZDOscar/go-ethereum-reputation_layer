@@ -106,6 +106,20 @@ var (
 		BloomRoot:    common.HexToHash("0xa39ced3ddbb87e909c7531df2afb6414bea9c9a60ab94da9c6b467535f05326e"),
 	}
 
+	// TestnetChainConfig contains the chain parameters to run a node on the Ropsten test network.
+	ReputationnetChainConfig = &ChainConfig{
+		ChainID:             big.NewInt(10),
+		HomesteadBlock:      big.NewInt(0),
+		DAOForkBlock:        nil,
+		DAOForkSupport:      true,
+		EIP150Block:         big.NewInt(0),
+		EIP150Hash:          common.HexToHash("0x41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d"),
+		EIP155Block:         big.NewInt(10),
+		EIP158Block:         big.NewInt(10),
+		ByzantiumBlock:      big.NewInt(1700000),
+		ConstantinopleBlock: big.NewInt(4230000),
+		Ethash:              new(EthashConfig),
+	}
 	// AllEthashProtocolChanges contains every protocol change (EIPs) introduced
 	// and accepted by the Ethereum core developers into the Ethash consensus.
 	//

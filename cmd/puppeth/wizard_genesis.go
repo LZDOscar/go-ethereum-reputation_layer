@@ -52,6 +52,7 @@ func (w *wizard) makeGenesis() {
 	fmt.Println("Which consensus engine to use? (default = clique)")
 	fmt.Println(" 1. Ethash - proof-of-work")
 	fmt.Println(" 2. Clique - proof-of-authority")
+	//fmt.Println(" 3. REthash - proof-of-reputation-work")
 
 	choice := w.read()
 	switch {
@@ -59,6 +60,10 @@ func (w *wizard) makeGenesis() {
 		// In case of ethash, we're pretty much done
 		genesis.Config.Ethash = new(params.EthashConfig)
 		genesis.ExtraData = make([]byte, 32)
+	//case choice == "3":
+	//	// In case of ethash, we're pretty much done
+	//	genesis.Config.REthash = new(params.REthashConfig)
+	//	genesis.ExtraData = make([]byte, 32)
 
 	case choice == "" || choice == "2":
 		// In the case of clique, configure the consensus parameters

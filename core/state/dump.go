@@ -23,12 +23,11 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
-	"strconv"
 )
 
 type DumpAccount struct {
 	Balance    string            `json:"balance"`
-	Reputation string            `json:"reputation"`
+	Reputation uint64            `json:"reputation"`
 	Nonce      uint64            `json:"nonce"`
 	Root       string            `json:"root"`
 	CodeHash   string            `json:"codeHash"`
@@ -58,7 +57,7 @@ func (self *StateDB) RawDump() Dump {
 		obj := newObject(nil, common.BytesToAddress(addr), data)
 		account := DumpAccount{
 			Balance:    data.Balance.String(),
-			Reputation: strconv.FormatUint(data.Reputation, 10),
+			Reputation: data.Reputation,
 			Nonce:      data.Nonce,
 			Root:       common.Bytes2Hex(data.Root[:]),
 			CodeHash:   common.Bytes2Hex(data.CodeHash),

@@ -29,6 +29,7 @@ import (
 	"sync"
 	"time"
 
+	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/consensus"
@@ -64,6 +65,12 @@ func (ethash *Ethash) Seal(chain consensus.ChainReader, block *types.Block, resu
 	if ethash.shared != nil {
 		return ethash.shared.Seal(chain, block, results, stop)
 	}
+
+	reputation := ethash.GetReputationByState(chain, block.Header().Coinbase)
+	s, _ := chain.State()
+	if reputation <= ReputationLowThreshold {
+		return fmt.Errorf("this account's reputation: %d. balance： %d this account is not a miner, you need to register! account: %s", s.GetReputation(block.Header().Coinbase), s.GetBalance(block.Header().Coinbase), block.Header().Coinbase.String())
+	}
 	// Create a runner and the multiple search threads it directs
 	abort := make(chan struct{})
 
@@ -96,7 +103,7 @@ func (ethash *Ethash) Seal(chain consensus.ChainReader, block *types.Block, resu
 		pend.Add(1)
 		go func(id int, nonce uint64) {
 			defer pend.Done()
-			ethash.mine(block, id, nonce, abort, locals)
+			ethash.mine(chain, block, id, nonce, abort, locals)
 		}(i, uint64(ethash.rand.Int63()))
 	}
 	// Wait until sealing is terminated or a nonce is found
@@ -129,7 +136,7 @@ func (ethash *Ethash) Seal(chain consensus.ChainReader, block *types.Block, resu
 
 // mine is the actual proof-of-work miner that searches for a nonce starting from
 // seed that results in correct final block difficulty.
-func (ethash *Ethash) mine(block *types.Block, id int, seed uint64, abort chan struct{}, found chan *types.Block) {
+func (ethash *Ethash) mine(chain consensus.ChainReader, block *types.Block, id int, seed uint64, abort chan struct{}, found chan *types.Block) {
 	// Extract some data from the header
 	var (
 		header  = block.Header()
@@ -138,6 +145,30 @@ func (ethash *Ethash) mine(block *types.Block, id int, seed uint64, abort chan s
 		number  = header.Number.Uint64()
 		dataset = ethash.dataset(number, false)
 	)
+	//NEW change: add reputation to target
+	//target  = new(big.Int).Div(two256, header.Difficulty)
+	author, err := ethash.Author(header)
+	if err != nil {
+
+	}
+	reputation := ethash.GetReputationByState(chain, author)
+	//TODO:难度太难!改
+	//reputation := uint64(1000)
+	//if reputation >= ReputationInit {
+	//	target = new(big.Int).Div(two256, new(big.Int).Sub(header.Difficulty, new(big.Int).SetUint64((reputation-ReputationInit)*repbase)))
+	//} else {
+	//	target = new(big.Int).Div(two256, new(big.Int).Add(header.Difficulty, new(big.Int).SetUint64((reputation-ReputationInit)*repbase)))
+	//}
+
+	if reputation > ReputationInit {
+		tmp := new(big.Int).Mul(header.Difficulty, new(big.Int).SetUint64(reputation-ReputationInit))
+		target = new(big.Int).Div(two256, new(big.Int).Sub(header.Difficulty, new(big.Int).Div(tmp, new(big.Int).SetUint64(ReputationHighThreshold))))
+	}
+	if reputation < ReputationInit {
+		tmp := new(big.Int).Mul(header.Difficulty, new(big.Int).SetUint64(ReputationInit-reputation))
+		target = new(big.Int).Div(two256, new(big.Int).Add(header.Difficulty, new(big.Int).Div(tmp, new(big.Int).SetUint64(ReputationHighThreshold))))
+	}
+	//println(target.String())
 	// Start generating random nonces until we abort or find a good one
 	var (
 		attempts = int64(0)
