@@ -404,6 +404,33 @@ func (ethash *Ethash) GetReputationByContract(address common.Address) uint64 {
 	//minerbookcontract.
 	//return 0
 }
+func (ethash *Ethash) Register(conaddr common.Address, mineraddr common.Address, value uint64) (*types.Transaction, error) {
+	//var addr = minerbook.MainNetAddress
+	var abi = contract.MinerBookABI
+	//conn, err := ethclient.Dial("\\\\.\\pipe\\geth.ipc")
+	//if err != nil {
+	//	log.Fatalf("Failed to connect to the Ethereum client: %v", err)
+	//	return nil, err
+	//}
+	mb, err := contract.NewMinerBook(conaddr, nil)
+	if err != nil {
+		log.Fatalf("Failed to instantiate a minerbook contract: %v", err)
+		return nil, err
+	}
+
+	// Create an authorized transactor and spend 1 unicorn
+	auth, err := bind.NewTransactor(strings.NewReader(abi), "123")
+	if err != nil {
+		log.Fatalf("Failed to create authorized transactor: %v", err)
+		return nil, err
+	}
+	tx, err := mb.Register(auth, mineraddr, mineraddr)
+	if err != nil {
+		log.Fatalf("Failed to request minerbook addreputation: %v", err)
+		return nil, err
+	}
+	return tx, nil
+}
 
 //TODO:
 func (ethash *Ethash) AddReputation(address common.Address, value uint64) (*types.Transaction, error) {
@@ -785,6 +812,8 @@ func (ethash *Ethash) Finalize(chain consensus.ChainReader, header *types.Header
 	//}
 
 	header.Root = state.IntermediateRoot(chain.Config().IsEIP158(header.Number))
+	println("con" + header.Number.String())
+	println("con" + header.Root.String())
 
 	// Header seems complete, assemble into a block and return
 	return types.NewBlock(header, txs, uncles, receipts), nil
