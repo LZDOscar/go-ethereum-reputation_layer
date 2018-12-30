@@ -109,8 +109,10 @@ func newObject(db *StateDB, address common.Address, data Account) *stateObject {
 	if data.Balance == nil {
 		data.Balance = new(big.Int)
 	}
-
-	data.Reputation = 0
+	////TODO
+	//if data.Reputation == 0 {
+	//	data.Reputation = uint64(0)
+	//}
 
 	if data.CodeHash == nil {
 		data.CodeHash = emptyCodeHash

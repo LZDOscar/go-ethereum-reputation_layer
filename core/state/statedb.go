@@ -217,7 +217,7 @@ func (self *StateDB) GetReputation(addr common.Address) uint64 {
 	if stateObject != nil {
 		return stateObject.Reputation()
 	}
-	return 0
+	return uint64(0)
 }
 
 func (self *StateDB) GetNonce(addr common.Address) uint64 {
@@ -401,12 +401,14 @@ func (self *StateDB) Suicide(addr common.Address) bool {
 		return false
 	}
 	self.journal.append(suicideChange{
-		account:     &addr,
-		prev:        stateObject.suicided,
-		prevbalance: new(big.Int).Set(stateObject.Balance()),
+		account:        &addr,
+		prev:           stateObject.suicided,
+		prevbalance:    new(big.Int).Set(stateObject.Balance()),
+		prevreputation: stateObject.Reputation(),
 	})
 	stateObject.markSuicided()
 	stateObject.data.Balance = new(big.Int)
+	stateObject.data.Reputation = 0
 
 	return true
 }

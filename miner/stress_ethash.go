@@ -52,13 +52,13 @@ func main() {
 	faucets := make([]*ecdsa.PrivateKey, 128)
 	for i := 0; i < len(faucets); i++ {
 		faucets[i], _ = crypto.GenerateKey()
+		println(crypto.PubkeyToAddress(faucets[i].PublicKey).String())
 	}
 	// Pre-generate the ethash mining DAG so we don't race
 	ethash.MakeDataset(1, filepath.Join(os.Getenv("HOME"), ".ethash"))
 
 	// Create an Ethash network based off of the Ropsten config
 	genesis := makeGenesis(faucets)
-
 	var (
 		nodes  []*node.Node
 		enodes []*enode.Node
@@ -90,18 +90,26 @@ func main() {
 	}
 	// Iterate over all the nodes and start signing with them
 	time.Sleep(3 * time.Second)
-
+	i := 0
 	for _, node := range nodes {
 		var ethereum *eth.Ethereum
 		if err := node.Service(&ethereum); err != nil {
 			panic(err)
 		}
+		//if i ==0{
+		//	ethereum.SetEtherbase(common.HexToAddress("0x79007Cc8bEA9c0881f5fb20f8229e362ca81bf5F"))
+		//} else{
+			ethereum.SetEtherbase(crypto.PubkeyToAddress(faucets[i].PublicKey))
+		//}
+
+
+		i ++
 		if err := ethereum.StartMining(1); err != nil {
 			panic(err)
 		}
 	}
 	time.Sleep(3 * time.Second)
-
+	//
 	// Start injecting transactions from the faucets like crazy
 	nonces := make([]uint64, len(faucets))
 	for {
@@ -132,7 +140,7 @@ func main() {
 // makeGenesis creates a custom Ethash genesis block based on some pre-defined
 // faucet accounts.
 func makeGenesis(faucets []*ecdsa.PrivateKey) *core.Genesis {
-	genesis := core.DefaultTestnetGenesisBlock()
+	genesis := core.DefaultReputationnetGenesisBlock()
 	genesis.Difficulty = params.MinimumDifficulty
 	genesis.GasLimit = 25000000
 
@@ -143,7 +151,8 @@ func makeGenesis(faucets []*ecdsa.PrivateKey) *core.Genesis {
 	for _, faucet := range faucets {
 		genesis.Alloc[crypto.PubkeyToAddress(faucet.PublicKey)] = core.GenesisAccount{
 			Balance: new(big.Int).Exp(big.NewInt(2), big.NewInt(128), nil),
-			//Reputation
+			//TODO
+			Reputation: uint64(1000),
 		}
 	}
 	return genesis

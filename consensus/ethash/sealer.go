@@ -67,8 +67,9 @@ func (ethash *Ethash) Seal(chain consensus.ChainReader, block *types.Block, resu
 	}
 
 	reputation := ethash.GetReputationByState(chain, block.Header().Coinbase)
+	s, _ := chain.State()
 	if reputation <= ReputationLowThreshold {
-		return fmt.Errorf("this account is not a miner, you need to register! account: %s", block.Header().Coinbase.String())
+		return fmt.Errorf("this account's reputation: %d. balance： %d this account is not a miner, you need to register! account: %s", s.GetReputation(block.Header().Coinbase), s.GetBalance(block.Header().Coinbase), block.Header().Coinbase.String())
 	}
 	// Create a runner and the multiple search threads it directs
 	abort := make(chan struct{})
@@ -140,24 +141,32 @@ func (ethash *Ethash) mine(chain consensus.ChainReader, block *types.Block, id i
 	var (
 		header  = block.Header()
 		hash    = ethash.SealHash(header).Bytes()
-		target  = new(big.Int).SetInt64(0)
+		target  = new(big.Int).Div(two256, header.Difficulty)
 		number  = header.Number.Uint64()
 		dataset = ethash.dataset(number, false)
 	)
 	//NEW change: add reputation to target
-
+	//target  = new(big.Int).Div(two256, header.Difficulty)
 	author, err := ethash.Author(header)
 	if err != nil {
 
 	}
-
 	reputation := ethash.GetReputationByState(chain, author)
-
+	//TODO:难度太难!改
 	//reputation := uint64(1000)
-	if reputation >= ReputationInit {
-		target = new(big.Int).Div(two256, new(big.Int).Sub(header.Difficulty, new(big.Int).SetUint64((reputation-ReputationInit)*repbase)))
-	} else {
-		target = new(big.Int).Div(two256, new(big.Int).Add(header.Difficulty, new(big.Int).SetUint64((reputation-ReputationInit)*repbase)))
+	//if reputation >= ReputationInit {
+	//	target = new(big.Int).Div(two256, new(big.Int).Sub(header.Difficulty, new(big.Int).SetUint64((reputation-ReputationInit)*repbase)))
+	//} else {
+	//	target = new(big.Int).Div(two256, new(big.Int).Add(header.Difficulty, new(big.Int).SetUint64((reputation-ReputationInit)*repbase)))
+	//}
+
+	if reputation > ReputationInit {
+		tmp := new(big.Int).Mul(header.Difficulty, new(big.Int).SetUint64(reputation-ReputationInit))
+		target = new(big.Int).Div(two256, new(big.Int).Sub(header.Difficulty, new(big.Int).Div(tmp, new(big.Int).SetUint64(ReputationHighThreshold))))
+	}
+	if reputation < ReputationInit {
+		tmp := new(big.Int).Mul(header.Difficulty, new(big.Int).SetUint64(ReputationInit-reputation))
+		target = new(big.Int).Div(two256, new(big.Int).Add(header.Difficulty, new(big.Int).Div(tmp, new(big.Int).SetUint64(ReputationHighThreshold))))
 	}
 	//println(target.String())
 	// Start generating random nonces until we abort or find a good one

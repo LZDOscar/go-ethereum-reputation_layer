@@ -725,12 +725,23 @@ func (ethash *Ethash) verifySeal(chain consensus.ChainReader, header *types.Head
 
 	//target  := new(big.Int).Div(two256, header.Difficulty)
 	//reputation := ethash.state.
-	var target = new(big.Int).SetInt64(0)
-	if reputation >= ReputationInit {
-		target = new(big.Int).Div(two256, new(big.Int).Sub(header.Difficulty, new(big.Int).SetUint64((reputation-ReputationInit)*repbase)))
-	} else {
-		target = new(big.Int).Div(two256, new(big.Int).Add(header.Difficulty, new(big.Int).SetUint64((ReputationInit-reputation)*repbase)))
+	target := new(big.Int).Div(two256, header.Difficulty)
+	//var repratio  = reputation/ReputationInit
+
+	//target = new(big.Int).Div(two256, new(big.Int).Sub(header.Difficulty, ))
+	if reputation > ReputationInit {
+		tmp := new(big.Int).Mul(header.Difficulty, new(big.Int).SetUint64(reputation-ReputationInit))
+		target = new(big.Int).Div(two256, new(big.Int).Sub(header.Difficulty, new(big.Int).Div(tmp, new(big.Int).SetUint64(ReputationHighThreshold))))
 	}
+	if reputation < ReputationInit {
+		tmp := new(big.Int).Mul(header.Difficulty, new(big.Int).SetUint64(ReputationInit-reputation))
+		target = new(big.Int).Div(two256, new(big.Int).Add(header.Difficulty, new(big.Int).Div(tmp, new(big.Int).SetUint64(ReputationHighThreshold))))
+	}
+	//if reputation >= ReputationInit {
+	//	target = new(big.Int).Div(two256, new(big.Int).Sub(header.Difficulty, new(big.Int).SetUint64((reputation-ReputationInit)*repbase)))
+	//} else {
+	//	target = new(big.Int).Div(two256, new(big.Int).Add(header.Difficulty, new(big.Int).SetUint64((reputation-ReputationInit)*repbase)))
+	//}
 	//println(target.String())
 
 	if new(big.Int).SetBytes(result).Cmp(target) > 0 {
@@ -839,11 +850,11 @@ func getReputationRewards(chain consensus.ChainReader, state *state.StateDB, hea
 	}
 
 	repCurrent := int(state.GetReputation(author))
-	repReward := (1 - (authorAcount / ReputationFrontierBlockCount)) * (2000 - repCurrent) / ReputationRwardFormulaOptimizeParam
+	repReward := (1 - (authorAcount / ReputationFrontierBlockCount)) * (int(ReputationHighThreshold) - repCurrent) / ReputationRwardFormulaOptimizeParam
 	if repCurrent+repReward > int(ReputationHighThreshold) {
 		return ReputationHighThreshold - uint64(repCurrent)
 	}
-	return uint64(repCurrent)
+	return uint64(repReward)
 }
 
 func reputationDecay(chain consensus.ChainReader, state *state.StateDB, header *types.Header) error {
@@ -861,7 +872,7 @@ func reputationDecay(chain consensus.ChainReader, state *state.StateDB, header *
 		log.Fatalf("Failed to instantiate a Token contract: %v", err)
 		return err
 	}
-	//TODO:
+	//TODO:获取miner列表，信誉衰减
 	minerMap, err := mb.GetMiners(nil)
 	if err != nil {
 		log.Fatalf("query registered error :%v", err)
@@ -986,8 +997,8 @@ func accumulateRewards(chain consensus.ChainReader, state *state.StateDB, header
 	repReward := getReputationRewards(chain, state, header)
 	state.AddReputation(header.Coinbase, repReward)
 
-	if new(big.Int).Mod(header.Number, new(big.Int).SetInt64(int64(ReputationBlackBlockCount))).Int64() == 0 {
-		reputationDecay(chain, state, header)
-	}
+	//if header.Number.Cmp(new(big.Int).SetInt64(0)) != 0 && new(big.Int).Mod(header.Number, new(big.Int).SetInt64(int64(ReputationBlackBlockCount))).Int64() == 0 {
+	//	reputationDecay(chain, state, header)
+	//}
 
 }
