@@ -49,16 +49,23 @@ func main() {
 	fdlimit.Raise(2048)
 
 	// Generate a batch of accounts to seal and fund with
-	faucets := make([]*ecdsa.PrivateKey, 128)
+	faucets := make([]*ecdsa.PrivateKey, 16)
+	// miner account
+	mineraccs := make([]*ecdsa.PrivateKey, 4)
 	for i := 0; i < len(faucets); i++ {
 		faucets[i], _ = crypto.GenerateKey()
 		println(crypto.PubkeyToAddress(faucets[i].PublicKey).String())
+	}
+
+	for i := 0; i < len(mineraccs); i++ {
+		mineraccs[i], _ = crypto.GenerateKey()
+		println(crypto.PubkeyToAddress(mineraccs[i].PublicKey).String())
 	}
 	// Pre-generate the ethash mining DAG so we don't race
 	ethash.MakeDataset(1, filepath.Join(os.Getenv("HOME"), ".ethash"))
 
 	// Create an Ethash network based off of the Ropsten config
-	genesis := makeGenesis(faucets)
+	genesis := makeGenesis(faucets, mineraccs)
 	var (
 		nodes  []*node.Node
 		enodes []*enode.Node
@@ -99,11 +106,10 @@ func main() {
 		//if i ==0{
 		//	ethereum.SetEtherbase(common.HexToAddress("0x79007Cc8bEA9c0881f5fb20f8229e362ca81bf5F"))
 		//} else{
-			ethereum.SetEtherbase(crypto.PubkeyToAddress(faucets[i].PublicKey))
+		ethereum.SetEtherbase(crypto.PubkeyToAddress(mineraccs[i].PublicKey))
 		//}
 
-
-		i ++
+		i++
 		if err := ethereum.StartMining(1); err != nil {
 			panic(err)
 		}
@@ -139,7 +145,7 @@ func main() {
 
 // makeGenesis creates a custom Ethash genesis block based on some pre-defined
 // faucet accounts.
-func makeGenesis(faucets []*ecdsa.PrivateKey) *core.Genesis {
+func makeGenesis(faucets []*ecdsa.PrivateKey, mineraccs []*ecdsa.PrivateKey) *core.Genesis {
 	genesis := core.DefaultReputationnetGenesisBlock()
 	genesis.Difficulty = params.MinimumDifficulty
 	genesis.GasLimit = 25000000
@@ -148,12 +154,25 @@ func makeGenesis(faucets []*ecdsa.PrivateKey) *core.Genesis {
 	genesis.Config.EIP150Hash = common.Hash{}
 
 	genesis.Alloc = core.GenesisAlloc{}
+
 	for _, faucet := range faucets {
+
 		genesis.Alloc[crypto.PubkeyToAddress(faucet.PublicKey)] = core.GenesisAccount{
+			Balance: new(big.Int).Exp(big.NewInt(2), big.NewInt(128), nil),
+			//TODO
+			Reputation: uint64(0),
+		}
+
+	}
+
+	for _, mineracc := range mineraccs {
+
+		genesis.Alloc[crypto.PubkeyToAddress(mineracc.PublicKey)] = core.GenesisAccount{
 			Balance: new(big.Int).Exp(big.NewInt(2), big.NewInt(128), nil),
 			//TODO
 			Reputation: uint64(1000),
 		}
+
 	}
 	return genesis
 }
