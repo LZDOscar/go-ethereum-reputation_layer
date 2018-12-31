@@ -82,7 +82,7 @@ type GenesisAccount struct {
 	Code       []byte                      `json:"code,omitempty"`
 	Storage    map[common.Hash]common.Hash `json:"storage,omitempty"`
 	Balance    *big.Int                    `json:"balance" gencodec:"required"`
-	Reputation    uint64                   `json:"reputation" gencodec:"required"`
+	Reputation uint64                      `json:"reputation" gencodec:"required"`
 	Nonce      uint64                      `json:"nonce,omitempty"`
 	PrivateKey []byte                      `json:"secretKey,omitempty"` // for tests
 }
@@ -278,7 +278,7 @@ func (g *Genesis) Commit(db ethdb.Database) (*types.Block, error) {
 
 	config := g.Config
 	if config == nil {
-		config = params.AllEthashProtocolChanges
+		config = params.ReputationnetChainConfig
 	}
 	rawdb.WriteChainConfig(db, block.Hash(), config)
 	return block, nil
@@ -296,7 +296,7 @@ func (g *Genesis) MustCommit(db ethdb.Database) *types.Block {
 
 // GenesisBlockForTesting creates and writes a block in which addr has the given wei balance.
 func GenesisBlockForTesting(db ethdb.Database, addr common.Address, balance *big.Int, reputation uint64) *types.Block {
-	g := Genesis{Alloc: GenesisAlloc{addr: {Balance: balance, Reputation:reputation}}}
+	g := Genesis{Alloc: GenesisAlloc{addr: {Balance: balance, Reputation: reputation}}}
 	return g.MustCommit(db)
 }
 
@@ -368,14 +368,14 @@ func DeveloperGenesisBlock(period uint64, faucet common.Address) *Genesis {
 		GasLimit:   6283185,
 		Difficulty: big.NewInt(1),
 		Alloc: map[common.Address]GenesisAccount{
-			common.BytesToAddress([]byte{1}): {Balance: big.NewInt(1),Reputation: uint64(0)}, // ECRecover
-			common.BytesToAddress([]byte{2}): {Balance: big.NewInt(1),Reputation: uint64(0)}, // SHA256
-			common.BytesToAddress([]byte{3}): {Balance: big.NewInt(1),Reputation: uint64(0)}, // RIPEMD
-			common.BytesToAddress([]byte{4}): {Balance: big.NewInt(1),Reputation: uint64(0)}, // Identity
-			common.BytesToAddress([]byte{5}): {Balance: big.NewInt(1),Reputation: uint64(0)}, // ModExp
-			common.BytesToAddress([]byte{6}): {Balance: big.NewInt(1),Reputation: uint64(0)}, // ECAdd
-			common.BytesToAddress([]byte{7}): {Balance: big.NewInt(1),Reputation: uint64(0)}, // ECScalarMul
-			common.BytesToAddress([]byte{8}): {Balance: big.NewInt(1),Reputation: uint64(0)}, // ECPairing
+			common.BytesToAddress([]byte{1}): {Balance: big.NewInt(1), Reputation: uint64(0)}, // ECRecover
+			common.BytesToAddress([]byte{2}): {Balance: big.NewInt(1), Reputation: uint64(0)}, // SHA256
+			common.BytesToAddress([]byte{3}): {Balance: big.NewInt(1), Reputation: uint64(0)}, // RIPEMD
+			common.BytesToAddress([]byte{4}): {Balance: big.NewInt(1), Reputation: uint64(0)}, // Identity
+			common.BytesToAddress([]byte{5}): {Balance: big.NewInt(1), Reputation: uint64(0)}, // ModExp
+			common.BytesToAddress([]byte{6}): {Balance: big.NewInt(1), Reputation: uint64(0)}, // ECAdd
+			common.BytesToAddress([]byte{7}): {Balance: big.NewInt(1), Reputation: uint64(0)}, // ECScalarMul
+			common.BytesToAddress([]byte{8}): {Balance: big.NewInt(1), Reputation: uint64(0)}, // ECPairing
 			faucet: {Balance: new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 256), big.NewInt(9)),
 				Reputation: uint64(1000)},
 		},
@@ -383,14 +383,16 @@ func DeveloperGenesisBlock(period uint64, faucet common.Address) *Genesis {
 }
 
 func decodePrealloc(data string) GenesisAlloc {
-	var p []struct{Addr, Balance *big.Int
-		Reputation uint64}
+	var p []struct {
+		Addr, Balance *big.Int
+		Reputation    uint64
+	}
 	if err := rlp.NewStream(strings.NewReader(data), 0).Decode(&p); err != nil {
 		panic(err)
 	}
 	ga := make(GenesisAlloc, len(p))
 	for _, account := range p {
-		ga[common.BigToAddress(account.Addr)] = GenesisAccount{Balance: account.Balance, Reputation:account.Reputation}
+		ga[common.BigToAddress(account.Addr)] = GenesisAccount{Balance: account.Balance, Reputation: account.Reputation}
 	}
 	return ga
 }

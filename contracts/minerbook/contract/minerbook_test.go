@@ -3,8 +3,7 @@ package contract
 import (
 	"crypto/ecdsa"
 	"fmt"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind/backends"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -12,6 +11,8 @@ import (
 	"math/big"
 	"testing"
 	//"math"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind/backends"
 )
 
 var (
