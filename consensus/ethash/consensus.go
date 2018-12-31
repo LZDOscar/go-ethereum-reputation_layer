@@ -57,7 +57,7 @@ var (
 	ReputationBlackBlockCount           = 1000 //the count of block needed when calculating reputation
 	ReputationRwardFormulaOptimizeParam = 100
 	ReputationDecayFormulaOptimizeParam = 100
-
+	ReputationWhiteAddress              = common.HexToAddress("0000000000000000000000000000000000000000")
 	// calcDifficultyConstantinople is the difficulty adjustment algorithm for Constantinople.
 	// It returns the difficulty that a new block should have when created at time given the
 	// parent block's time and difficulty. The calculation uses the Byzantium rules, but with
@@ -747,15 +747,22 @@ func (ethash *Ethash) verifySeal(chain consensus.ChainReader, header *types.Head
 	reputation := ethash.GetReputationByState(chain, author)
 	//reputation := uint64(1000)
 	if reputation <= ReputationLowThreshold {
-		return fmt.Errorf("reputation is too low")
+		if author == ReputationWhiteAddress {
+			reputation = ReputationInit
+		} else {
+			return fmt.Errorf("reputation is too low")
+		}
 	}
 
 	//target  := new(big.Int).Div(two256, header.Difficulty)
 	//reputation := ethash.state.
-	target := new(big.Int).Div(two256, header.Difficulty)
+	target := new(big.Int)
 	//var repratio  = reputation/ReputationInit
 
 	//target = new(big.Int).Div(two256, new(big.Int).Sub(header.Difficulty, ))
+	if reputation == ReputationInit {
+		target = new(big.Int).Div(two256, header.Difficulty)
+	}
 	if reputation > ReputationInit {
 		tmp := new(big.Int).Mul(header.Difficulty, new(big.Int).SetUint64(reputation-ReputationInit))
 		target = new(big.Int).Div(two256, new(big.Int).Sub(header.Difficulty, new(big.Int).Div(tmp, new(big.Int).SetUint64(ReputationHighThreshold))))
@@ -812,8 +819,8 @@ func (ethash *Ethash) Finalize(chain consensus.ChainReader, header *types.Header
 	//}
 
 	header.Root = state.IntermediateRoot(chain.Config().IsEIP158(header.Number))
-	println("con" + header.Number.String())
-	println("con" + header.Root.String())
+	//println("con" + header.Number.String())
+	//println("con" + header.Root.String())
 
 	// Header seems complete, assemble into a block and return
 	return types.NewBlock(header, txs, uncles, receipts), nil
@@ -851,6 +858,9 @@ var (
 func getReputationRewards(chain consensus.ChainReader, state *state.StateDB, header *types.Header) uint64 {
 
 	author := header.Coinbase
+	if author == ReputationWhiteAddress {
+		return 0
+	}
 	authorString := author.String()
 	authorAcount := 0
 	parentHeader := new(types.Header)
@@ -863,15 +873,18 @@ func getReputationRewards(chain consensus.ChainReader, state *state.StateDB, hea
 	//}else{
 	//	count = ReputationFrontierBlockCount
 	//}
+	//println(author.String())
 	parentHeader = header
 	for i := 0; i < ReputationFrontierBlockCount; i++ {
 		//println(parentHeader.ParentHash.String())
 		//header, _ := conn.HeaderByHash(nil, parentHeader.ParentHash)
+		//println("当前："+parentHeader.Coinbase.String())
+		parentHeader = chain.GetHeaderByHash(parentHeader.ParentHash)
 
-		parentHeader := chain.GetHeaderByHash(parentHeader.ParentHash)
 		if parentHeader == nil {
 			break
 		}
+		//println("前一个："+parentHeader.Coinbase.String())
 		iString := parentHeader.Coinbase.String()
 		if strings.Compare(authorString, iString) == 0 {
 			authorAcount += 1
@@ -879,10 +892,14 @@ func getReputationRewards(chain consensus.ChainReader, state *state.StateDB, hea
 	}
 
 	repCurrent := int(state.GetReputation(author))
+
+	//println(repCurrent)
 	repReward := (1 - (authorAcount / ReputationFrontierBlockCount)) * (int(ReputationHighThreshold) - repCurrent) / ReputationRwardFormulaOptimizeParam
 	if repCurrent+repReward > int(ReputationHighThreshold) {
 		return ReputationHighThreshold - uint64(repCurrent)
 	}
+	//println(authorAcount)
+	//println(repReward)
 	return uint64(repReward)
 }
 
@@ -916,7 +933,7 @@ func getReputationRewards(chain consensus.ChainReader, state *state.StateDB, hea
 //	}
 //	parentHeader := header
 //	for i := 0; i < ReputationBlackBlockCount; i++ {
-//		parentHeader := chain.GetHeaderByHash(parentHeader.ParentHash)
+//		parentHeader = chain.GetHeaderByHash(parentHeader.ParentHash)
 //		if parentHeader == nil {
 //			break
 //		}

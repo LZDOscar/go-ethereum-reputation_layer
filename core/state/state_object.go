@@ -111,7 +111,7 @@ func newObject(db *StateDB, address common.Address, data Account) *stateObject {
 	}
 	////TODO
 	//if data.Reputation == 0 {
-	//	data.Reputation = uint64(0)
+	//	data.Reputation = uint64(1000)
 	//}
 
 	if data.CodeHash == nil {

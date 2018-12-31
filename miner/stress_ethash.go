@@ -164,15 +164,15 @@ func makeGenesis(faucets []*ecdsa.PrivateKey, mineraccs []*ecdsa.PrivateKey) *co
 		}
 
 	}
-
+	i := 0
 	for _, mineracc := range mineraccs {
 
 		genesis.Alloc[crypto.PubkeyToAddress(mineracc.PublicKey)] = core.GenesisAccount{
 			Balance: new(big.Int).Exp(big.NewInt(2), big.NewInt(128), nil),
 			//TODO
-			Reputation: uint64(1000),
+			Reputation: uint64(1000)+uint64(i*200),
 		}
-
+		i++
 	}
 	return genesis
 }

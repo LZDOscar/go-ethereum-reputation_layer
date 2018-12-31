@@ -52,6 +52,7 @@ func newTestBackend() *backends.SimulatedBackend {
 func deploy(prvKey *ecdsa.PrivateKey, amount *big.Int, backend *backends.SimulatedBackend) (common.Address, error) {
 	deployTransactor := bind.NewKeyedTransactor(prvKey)
 	deployTransactor.Value = amount
+
 	addr, _, _, err := contract.DeployChequebook(deployTransactor, backend)
 	if err != nil {
 		return common.Address{}, err

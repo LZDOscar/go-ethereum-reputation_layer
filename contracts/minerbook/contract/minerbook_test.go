@@ -55,6 +55,7 @@ func setup() (*testAccount, error) {
 	if err != nil {
 		return nil, err
 	}
+	backend.Commit()
 
 	return &testAccount{
 		addr,

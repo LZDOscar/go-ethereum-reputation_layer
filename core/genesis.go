@@ -349,7 +349,7 @@ func DefaultReputationnetGenesisBlock() *Genesis {
 		Nonce:      66,
 		ExtraData:  hexutil.MustDecode("0x3535353535353535353535353535353535353535353535353535353535353535"),
 		GasLimit:   16777216,
-		Difficulty: big.NewInt(1048576),
+		Difficulty: big.NewInt(100),
 		Alloc:      GenesisAlloc{},
 	}
 }
