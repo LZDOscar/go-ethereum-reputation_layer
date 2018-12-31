@@ -198,9 +198,9 @@ func GenerateChain(config *params.ChainConfig, parent *types.Block, engine conse
 		if b.engine != nil {
 			// Finalize and seal the block
 			println("chainmaker-finalize")
-			println(chainreader)
+			println(chainreader.config.String())
 			println("header" + b.header.Root.String())
-			println(statedb)
+			println(string(statedb.Dump()))
 			println(b.txs)
 			println(b.uncles)
 			println(b.receipts)

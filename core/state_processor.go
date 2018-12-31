@@ -78,9 +78,9 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 	}
 	// Finalize the block, applying any consensus engine specific extras (e.g. block rewards)
 	println("process-finalize")
-	println(p.bc)
+	println(p.bc.chainConfig.String())
 	println("header" + header.Root.String())
-	println(statedb)
+	println(string(statedb.Dump()))
 	println(block.Transactions())
 	println(block.Uncles())
 	println(receipts)
