@@ -36,9 +36,13 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto/sha3"
 
+	MBC "github.com/ethereum/go-ethereum/contracts/minerbook/contract"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
 	"strings"
+	//"log"
+	//"github.com/ethereum/go-ethereum/contracts/minerbook"
+	"log"
 )
 
 // Ethash proof-of-work protocol constants.
@@ -70,6 +74,13 @@ var (
 	// parent block's time and difficulty. The calculation uses the Byzantium rules.
 	// Specification EIP-649: https://eips.ethereum.org/EIPS/eip-649
 	calcDifficultyByzantium = makeDifficultyCalculator(big.NewInt(3000000))
+
+	//临时测试所用的
+	ReputationContractAddress = common.Address{}
+	MinersListTest            = []common.Address{common.HexToAddress("0000000000000000000000000000000000000001"),
+		common.HexToAddress("0000000000000000000000000000000000000002"),
+		common.HexToAddress("0000000000000000000000000000000000000003"),
+		common.HexToAddress("0000000000000000000000000000000000000004")}
 )
 
 // Various error messages to mark blocks invalid. These should be private to
@@ -903,55 +914,81 @@ func getReputationRewards(chain consensus.ChainReader, state *state.StateDB, hea
 	return uint64(repReward)
 }
 
-//func reputationDecay(chain consensus.ChainReader, state *state.StateDB, header *types.Header) error {
-//	// 每100个区块调用一次
-//	// 调用合约，返回miner列表,减少一些信誉值。
-//	var addr = minerbook.MainNetAddress
-//	// Create an IPC based RPC connection to a remote node and instantiate a contract binding
-//	//conn, err := ethclient.Dial("\\\\.\\pipe\\geth.ipc")
-//	//if err != nil {
-//	//	log.Fatalf("Failed to connect to the Ethereum client: %v", err)
-//	//	return err
-//	//}
-//	mb, err := contract.NewMinerBook(addr, nil)
-//	if err != nil {
-//		log.Fatalf("Failed to instantiate a Token contract: %v", err)
-//		return err
-//	}
-//	//TODO:获取miner列表，信誉衰减
-//	minerMap, err := mb.GetMiners(nil)
-//	if err != nil {
-//		log.Fatalf("query registered error :%v", err)
-//		return err
-//	}
-//	var minerList = make(map[common.Address]int)
-//	for miner, eable := range minerMap {
-//		if eable == true {
-//			//mineraddr := crypto.Keccak256Hash(miner[:]).Bytes()
-//			minerList[miner] = 0
-//		}
-//	}
-//	parentHeader := header
-//	for i := 0; i < ReputationBlackBlockCount; i++ {
-//		parentHeader = chain.GetHeaderByHash(parentHeader.ParentHash)
-//		if parentHeader == nil {
-//			break
-//		}
-//		//mineriString := parentHeader.Coinbase.String()
-//		mineraddr := parentHeader.Coinbase
-//		minerList[mineraddr] += 1
-//	}
-//	for miner, mineraccount := range minerList {
-//		repCurrent := int(state.GetReputation(miner))
-//		repDecay := (1 - mineraccount/ReputationFrontierBlockCount) * repCurrent / ReputationDecayFormulaOptimizeParam
-//		if repCurrent < repDecay {
-//			state.SubReputation(miner, uint64(repCurrent))
-//			//TODO：加入黑名单！
-//		}
-//		state.SubReputation(miner, uint64(repDecay))
-//	}
-//	return nil
-//}
+func reputationDecay(chain consensus.ChainReader, state *state.StateDB, header *types.Header) error {
+	// 每100个区块调用一次
+	// 调用合约，返回miner列表,减少一些信誉值。
+	var addr = ReputationContractAddress
+	// Create an IPC based RPC connection to a remote node and instantiate a contract binding
+	//conn, err := ethclient.Dial("\\\\.\\pipe\\geth.ipc")
+	//if err != nil {
+	//	log.Fatalf("Failed to connect to the Ethereum client: %v", err)
+	//	return err
+	//}
+	mb, err := MBC.NewMinerBook(addr, nil)
+	if err != nil {
+		log.Fatalf("Failed to instantiate a Token contract: %v", err)
+		return err
+	}
+	//TODO:获取miner列表，信誉衰减
+	miners, err := mb.GetMiners(nil)
+	if err != nil {
+		log.Fatalf("get miners error :%v", err)
+		return err
+	}
+	var minerList = make(map[common.Address]int)
+	for _, miner := range miners {
+		minerList[miner] = 0
+	}
+	parentHeader := header
+	for i := 0; i < ReputationBlackBlockCount; i++ {
+		parentHeader = chain.GetHeaderByHash(parentHeader.ParentHash)
+		if parentHeader == nil {
+			break
+		}
+		//mineriString := parentHeader.Coinbase.String()
+		mineraddr := parentHeader.Coinbase
+		minerList[mineraddr] += 1
+	}
+	for miner, mineraccount := range minerList {
+		repCurrent := int(state.GetReputation(miner))
+		repDecay := (1 - mineraccount/ReputationFrontierBlockCount) * repCurrent / ReputationDecayFormulaOptimizeParam
+		if repCurrent < repDecay {
+			state.SubReputation(miner, uint64(repCurrent))
+			//TODO：加入黑名单！
+		}
+		state.SubReputation(miner, uint64(repDecay))
+	}
+	return nil
+}
+
+func reputationDecayTest(chain consensus.ChainReader, state *state.StateDB, header *types.Header) error {
+
+	miners := MinersListTest
+	var minerList = make(map[common.Address]int)
+	for _, miner := range miners {
+		minerList[miner] = 0
+	}
+	parentHeader := header
+	for i := 0; i < ReputationBlackBlockCount; i++ {
+		parentHeader = chain.GetHeaderByHash(parentHeader.ParentHash)
+		if parentHeader == nil {
+			break
+		}
+		//mineriString := parentHeader.Coinbase.String()
+		mineraddr := parentHeader.Coinbase
+		minerList[mineraddr] += 1
+	}
+	for miner, mineraccount := range minerList {
+		repCurrent := int(state.GetReputation(miner))
+		repDecay := (1 - mineraccount/ReputationFrontierBlockCount) * repCurrent / ReputationDecayFormulaOptimizeParam
+		if repCurrent < repDecay {
+			state.SubReputation(miner, uint64(repCurrent))
+			//TODO：加入黑名单！
+		}
+		state.SubReputation(miner, uint64(repDecay))
+	}
+	return nil
+}
 
 //func (ethash *Ethash) reputationDecayByContract(state *state.StateDB, header *types.Header) ([]*types.Transaction, error) {
 //	// 每100个区块调用一次
@@ -1043,8 +1080,9 @@ func accumulateRewards(chain consensus.ChainReader, state *state.StateDB, header
 	repReward := getReputationRewards(chain, state, header)
 	state.AddReputation(header.Coinbase, repReward)
 
-	//if header.Number.Cmp(new(big.Int).SetInt64(0)) != 0 && new(big.Int).Mod(header.Number, new(big.Int).SetInt64(int64(ReputationBlackBlockCount))).Int64() == 0 {
-	//	reputationDecay(chain, state, header)
-	//}
+	//目前所用的是Test方法
+	if header.Number.Cmp(new(big.Int).SetInt64(0)) != 0 && new(big.Int).Mod(header.Number, new(big.Int).SetInt64(int64(ReputationBlackBlockCount))).Int64() == 0 {
+		reputationDecayTest(chain, state, header)
+	}
 
 }

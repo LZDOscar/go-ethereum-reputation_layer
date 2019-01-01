@@ -31,6 +31,8 @@ type testAccount struct {
 	contract          *MinerBook
 	backend           *backends.SimulatedBackend
 	txOpts            *bind.TransactOpts
+
+	//callOpts *bind.CallOpts
 }
 
 func setup() (*testAccount, error) {
@@ -47,9 +49,9 @@ func setup() (*testAccount, error) {
 
 	addr := crypto.PubkeyToAddress(privKey.PublicKey)
 	txOpts := bind.NewKeyedTransactor(privKey)
-	startingBalance, _ := new(big.Int).SetString("100000000000000000000", 10)
-	genesis[addr] = core.GenesisAccount{Balance: startingBalance}
-	backend := backends.NewSimulatedBackend(genesis, 2100000)
+	//callOpts :=bind.new
+	genesis[addr] = core.GenesisAccount{Balance: big.NewInt(1000000000), Reputation: 1000}
+	backend := backends.NewSimulatedBackend(genesis, 10000000)
 
 	_, _, contract, err := DeployMinerBook(txOpts, backend)
 	if err != nil {
@@ -75,65 +77,6 @@ func TestSetupAndContractRegistration(t *testing.T) {
 	}
 }
 
-// negative test case, public key that is not 48 bytes.
-func TestRegisterWithLessThan48BytesPubkey(t *testing.T) {
-	testAccount, err := setup()
-	if err != nil {
-		t.Fatal(err)
-	}
-	var pubKey = make([]byte, 32)
-	copy(pubKey, testAccount.pubKey[:])
-	withdrawAddr := &common.Address{'A', 'D', 'D', 'R', 'E', 'S', 'S'}
-	//randaoCommitment := &[32]byte{'S', 'H', 'H', 'H', 'H', 'I', 'T', 'S', 'A', 'S', 'E', 'C', 'R', 'E', 'T'}
-
-	testAccount.txOpts.Value = amount00Eth
-	_, err = testAccount.contract.Register(testAccount.txOpts, testAccount.addr, *withdrawAddr)
-	if err == nil {
-		t.Error("Validator registration should have failed with a 32 bytes pubkey")
-	}
-	if err != nil {
-		println("Test Success!")
-	}
-}
-
-// negative test case, deposit with less than 32 ETH.
-//func TestRegisterWithLessThan0Eth(t *testing.T) {
-//	testAccount, err := setup()
-//	if err != nil {
-//		t.Fatal(err)
-//	}
-//	withdrawAddr := &common.Address{'A', 'D', 'D', 'R', 'E', 'S', 'S'}
-//	//randaoCommitment := &[32]byte{'S', 'H', 'H', 'H', 'H', 'I', 'T', 'S', 'A', 'S', 'E', 'C', 'R', 'E', 'T'}
-//
-//	testAccount.txOpts.Value = amount00Eth
-//	_, err = testAccount.contract.Register(testAccount.txOpts, testAccount.pubKey, *withdrawAddr)
-//	if err == nil {
-//		t.Error("Validator registration should have failed with insufficient deposit")
-//	}
-//	if err != nil {
-//		t.Error(err)
-//	}
-//}
-
-//// negative test case, deposit more than 32 ETH.
-//func TestRegisterWithMoreThan32Eth(t *testing.T) {
-//	testAccount, err := setup()
-//	if err != nil {
-//		t.Fatal(err)
-//	}
-//	withdrawAddr := &common.Address{'A', 'D', 'D', 'R', 'E', 'S', 'S'}
-//	randaoCommitment := &[32]byte{'S', 'H', 'H', 'H', 'H', 'I', 'T', 'S', 'A', 'S', 'E', 'C', 'R', 'E', 'T'}
-//
-//	testAccount.txOpts.Value = amount33Eth
-//	_, err = testAccount.contract.Register(testAccount.txOpts, testAccount.pubKey, *withdrawAddr)
-//	if err == nil {
-//		t.Error("Validator registration should have failed with more than deposit amount")
-//	}
-//	if err != nil {
-//		t.Error(err)
-//	}
-//}
-//
 // negative test case, test registering with the same public key twice.
 func TestRegisterTwice(t *testing.T) {
 	testAccount, err := setup()
@@ -177,6 +120,7 @@ func TestRegister(t *testing.T) {
 	var hashedPub [20]byte
 	copy(hashedPub[:], crypto.Keccak256(testAccount.pubKey))
 
+	println("register account address:" + testAccount.addr.String())
 	_, err = testAccount.contract.Register(testAccount.txOpts, testAccount.addr, *withdrawAddr)
 	testAccount.backend.Commit()
 	if err == nil {
@@ -211,6 +155,24 @@ func TestRegister(t *testing.T) {
 		t.Errorf("validatorRegistered event withdrawal address miss matched. Want: %v, Got: %v", *withdrawAddr, log.Event.WithdrawalAddressbytes48)
 	}
 
+	//var miners map[common.Address] bool
+
+	miner, err := testAccount.contract.UsedHashedPubkey(nil, testAccount.addr)
+	if err != nil {
+		t.Errorf("getminer :%v", err)
+	}
+	print("getminer: ")
+	println(miner)
+
+	miners, err := testAccount.contract.GetMiners(nil)
+	if err != nil {
+		t.Errorf("getminers :%v", err)
+	}
+	println("getminers")
+	for _, v := range miners {
+		println(v.String())
+	}
+
 	_, err = testAccount.contract.DeRegister(testAccount.txOpts, testAccount.addr)
 	testAccount.backend.Commit()
 	if err == nil {
@@ -220,4 +182,19 @@ func TestRegister(t *testing.T) {
 		t.Errorf("Validator registration failed: %v", err)
 	}
 
+	miner, err = testAccount.contract.UsedHashedPubkey(nil, testAccount.addr)
+	if err != nil {
+		t.Errorf("getminer :%v", err)
+	}
+	print("getminer: ")
+	println(miner)
+
+	miners, err = testAccount.contract.GetMiners(nil)
+	if err != nil {
+		t.Errorf("getminers :%v", err)
+	}
+	println("getminers")
+	for _, v := range miners {
+		println(v.String())
+	}
 }
