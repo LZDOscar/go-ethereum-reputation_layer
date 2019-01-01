@@ -28,6 +28,8 @@ func DeployChequebook(auth *bind.TransactOpts, backend bind.ContractBackend) (co
 		return common.Address{}, nil, nil, err
 	}
 	address, tx, contract, err := bind.DeployContract(auth, parsed, common.FromHex(ChequebookBin), backend)
+	println("contract address:" + address.String())
+	println(contract)
 	if err != nil {
 		return common.Address{}, nil, nil, err
 	}

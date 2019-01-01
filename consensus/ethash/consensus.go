@@ -25,21 +25,24 @@ import (
 	"time"
 
 	mapset "github.com/deckarep/golang-set"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	//"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/consensus/misc"
-	"github.com/ethereum/go-ethereum/contracts/minerbook"
-	"github.com/ethereum/go-ethereum/contracts/minerbook/contract"
+	//"github.com/ethereum/go-ethereum/contracts/minerbook"
+	//"github.com/ethereum/go-ethereum/contracts/minerbook/contract"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto/sha3"
-	"github.com/ethereum/go-ethereum/ethclient"
+
+	MBC "github.com/ethereum/go-ethereum/contracts/minerbook/contract"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
-	"log"
 	"strings"
+	//"log"
+	//"github.com/ethereum/go-ethereum/contracts/minerbook"
+	"log"
 )
 
 // Ethash proof-of-work protocol constants.
@@ -58,7 +61,7 @@ var (
 	ReputationBlackBlockCount           = 1000 //the count of block needed when calculating reputation
 	ReputationRwardFormulaOptimizeParam = 100
 	ReputationDecayFormulaOptimizeParam = 100
-
+	ReputationWhiteAddress              = common.HexToAddress("0000000000000000000000000000000000000000")
 	// calcDifficultyConstantinople is the difficulty adjustment algorithm for Constantinople.
 	// It returns the difficulty that a new block should have when created at time given the
 	// parent block's time and difficulty. The calculation uses the Byzantium rules, but with
@@ -71,6 +74,13 @@ var (
 	// parent block's time and difficulty. The calculation uses the Byzantium rules.
 	// Specification EIP-649: https://eips.ethereum.org/EIPS/eip-649
 	calcDifficultyByzantium = makeDifficultyCalculator(big.NewInt(3000000))
+
+	//临时测试所用的
+	ReputationContractAddress = common.Address{}
+	MinersListTest            = []common.Address{common.HexToAddress("0000000000000000000000000000000000000001"),
+		common.HexToAddress("0000000000000000000000000000000000000002"),
+		common.HexToAddress("0000000000000000000000000000000000000003"),
+		common.HexToAddress("0000000000000000000000000000000000000004")}
 )
 
 // Various error messages to mark blocks invalid. These should be private to
@@ -332,21 +342,22 @@ func (ethash *Ethash) verifyHeader(chain consensus.ChainReader, header, parent *
 	return nil
 }
 
-func (ethash *Ethash) CheckRegister(address common.Address) (bool, error) {
-	var addr = minerbook.MainNetAddress
-	mb, err := contract.NewMinerBook(addr, nil)
-	if err != nil {
-		log.Fatalf("Failed to instantiate a Token contract: %v", err)
-		return false, err
-	}
-	//TODO:
-	reg, err := mb.UsedHashedPubkey(nil, address)
-	if err != nil {
-		log.Fatalf("query registered error :%v", err)
-		return false, err
-	}
-	return reg, nil
-}
+//
+//func (ethash *Ethash) CheckRegister(address common.Address) (bool, error) {
+//	var addr = minerbook.MainNetAddress
+//	mb, err := contract.NewMinerBook(addr, nil)
+//	if err != nil {
+//		log.Fatalf("Failed to instantiate a Token contract: %v", err)
+//		return false, err
+//	}
+//	//TODO:
+//	reg, err := mb.UsedHashedPubkey(nil, address)
+//	if err != nil {
+//		log.Fatalf("query registered error :%v", err)
+//		return false, err
+//	}
+//	return reg, nil
+//}
 
 func (ethash *Ethash) GetReputationByState(chain consensus.ChainReader, address common.Address) uint64 {
 	//conn, _ := ethclient.Dial("\\\\.\\pipe\\geth.ipc")
@@ -366,103 +377,130 @@ func (ethash *Ethash) GetReputationByState(chain consensus.ChainReader, address 
 
 // According to the MinerBook contract, obtain the author's reputation.
 // TODO:
-func (ethash *Ethash) GetReputationByContract(address common.Address) uint64 {
-	//var abi = contract.MinerBookABI
-	var addr = minerbook.MainNetAddress
-	// Create an IPC based RPC connection to a remote node and instantiate a contract binding
-	//conn, err := ethclient.Dial("\\\\.\\pipe\\geth.ipc")
-	//if err != nil {
-	//	log.Fatalf("Failed to connect to the Ethereum client: %v", err)
-	//	return -1
-	//}
-	mb, err := contract.NewMinerBook(addr, nil)
-	if err != nil {
-		log.Fatalf("Failed to instantiate a Token contract: %v", err)
-		return 0
-	}
-
-	//used, err := mb.UsedHashedPubkey(nil, crypto.Keccak256Hash(address[:]))
-	used, err := mb.UsedHashedPubkey(nil, address)
-	if err != nil {
-		log.Fatalf("query registered error :%v", err)
-		return 0
-	}
-	if used != true {
-		log.Fatalf("address is not registered")
-		return 0
-	}
-
-	reputation, err := mb.ReputationList(nil, address)
-	if err != nil {
-		log.Fatalf("query reputation error:%v", err)
-	}
-
-	return reputation
-
-	//var backend = contract.MinerBook
-	//var contract, err = contract.NewMinerBook(minerbook.MainNetAddress,ethash)
-	//minerbookcontract.
-	//return 0
-}
-
-//TODO:
-func (ethash *Ethash) AddReputation(address common.Address, value uint64) (*types.Transaction, error) {
-	var addr = minerbook.MainNetAddress
-	var abi = contract.MinerBookABI
-	//conn, err := ethclient.Dial("\\\\.\\pipe\\geth.ipc")
-	//if err != nil {
-	//	log.Fatalf("Failed to connect to the Ethereum client: %v", err)
-	//	return nil, err
-	//}
-	mb, err := contract.NewMinerBook(addr, nil)
-	if err != nil {
-		log.Fatalf("Failed to instantiate a minerbook contract: %v", err)
-		return nil, err
-	}
-
-	// Create an authorized transactor and spend 1 unicorn
-	auth, err := bind.NewTransactor(strings.NewReader(abi), "123")
-	if err != nil {
-		log.Fatalf("Failed to create authorized transactor: %v", err)
-		return nil, err
-	}
-	tx, err := mb.AddReputation(auth, address[:], value)
-	if err != nil {
-		log.Fatalf("Failed to request minerbook addreputation: %v", err)
-		return nil, err
-	}
-	return tx, nil
-}
-
-//TODO:
-func (ethash *Ethash) SubReputation(address common.Address, value uint64) (*types.Transaction, error) {
-	var addr = minerbook.MainNetAddress
-	var abi = contract.MinerBookABI
-	//conn, err := ethclient.Dial("\\\\.\\pipe\\geth.ipc")
-	//if err != nil {
-	//	log.Fatalf("Failed to connect to the Ethereum client: %v", err)
-	//	return nil, err
-	//}
-
-	mb, err := contract.NewMinerBook(addr, nil)
-	if err != nil {
-		log.Fatalf("Failed to instantiate a minerbook contract: %v", err)
-		return nil, err
-	}
-
-	// Create an authorized transactor and spend 1 unicorn
-	auth, err := bind.NewTransactor(strings.NewReader(abi), "123")
-	if err != nil {
-		log.Fatalf("Failed to create authorized transactor: %v", err)
-		return nil, err
-	}
-	tx, err := mb.SubReputation(auth, address[:], value)
-	if err != nil {
-		log.Fatalf("Failed to request minerbook addreputation: %v", err)
-		return nil, err
-	}
-	return tx, nil
-}
+//func (ethash *Ethash) GetReputationByContract(address common.Address) uint64 {
+//	//var abi = contract.MinerBookABI
+//	var addr = minerbook.MainNetAddress
+//	// Create an IPC based RPC connection to a remote node and instantiate a contract binding
+//	//conn, err := ethclient.Dial("\\\\.\\pipe\\geth.ipc")
+//	//if err != nil {
+//	//	log.Fatalf("Failed to connect to the Ethereum client: %v", err)
+//	//	return -1
+//	//}
+//	mb, err := contract.NewMinerBook(addr, nil)
+//	if err != nil {
+//		log.Fatalf("Failed to instantiate a Token contract: %v", err)
+//		return 0
+//	}
+//
+//	//used, err := mb.UsedHashedPubkey(nil, crypto.Keccak256Hash(address[:]))
+//	used, err := mb.UsedHashedPubkey(nil, address)
+//	if err != nil {
+//		log.Fatalf("query registered error :%v", err)
+//		return 0
+//	}
+//	if used != true {
+//		log.Fatalf("address is not registered")
+//		return 0
+//	}
+//
+//	reputation, err := mb.ReputationList(nil, address)
+//	if err != nil {
+//		log.Fatalf("query reputation error:%v", err)
+//	}
+//
+//	return reputation
+//
+//	//var backend = contract.MinerBook
+//	//var contract, err = contract.NewMinerBook(minerbook.MainNetAddress,ethash)
+//	//minerbookcontract.
+//	//return 0
+//}
+//func (ethash *Ethash) Register(conaddr common.Address, mineraddr common.Address, value uint64) (*types.Transaction, error) {
+//	//var addr = minerbook.MainNetAddress
+//	var abi = contract.MinerBookABI
+//	//conn, err := ethclient.Dial("\\\\.\\pipe\\geth.ipc")
+//	//if err != nil {
+//	//	log.Fatalf("Failed to connect to the Ethereum client: %v", err)
+//	//	return nil, err
+//	//}
+//	mb, err := contract.NewMinerBook(conaddr, nil)
+//	if err != nil {
+//		log.Fatalf("Failed to instantiate a minerbook contract: %v", err)
+//		return nil, err
+//	}
+//
+//	// Create an authorized transactor and spend 1 unicorn
+//	auth, err := bind.NewTransactor(strings.NewReader(abi), "123")
+//	if err != nil {
+//		log.Fatalf("Failed to create authorized transactor: %v", err)
+//		return nil, err
+//	}
+//	tx, err := mb.Register(auth, mineraddr, mineraddr)
+//	if err != nil {
+//		log.Fatalf("Failed to request minerbook addreputation: %v", err)
+//		return nil, err
+//	}
+//	return tx, nil
+//}
+//
+////TODO:
+//func (ethash *Ethash) AddReputation(address common.Address, value uint64) (*types.Transaction, error) {
+//	var addr = minerbook.MainNetAddress
+//	var abi = contract.MinerBookABI
+//	//conn, err := ethclient.Dial("\\\\.\\pipe\\geth.ipc")
+//	//if err != nil {
+//	//	log.Fatalf("Failed to connect to the Ethereum client: %v", err)
+//	//	return nil, err
+//	//}
+//	mb, err := contract.NewMinerBook(addr, nil)
+//	if err != nil {
+//		log.Fatalf("Failed to instantiate a minerbook contract: %v", err)
+//		return nil, err
+//	}
+//
+//	// Create an authorized transactor and spend 1 unicorn
+//	auth, err := bind.NewTransactor(strings.NewReader(abi), "123")
+//	if err != nil {
+//		log.Fatalf("Failed to create authorized transactor: %v", err)
+//		return nil, err
+//	}
+//	tx, err := mb.AddReputation(auth, address[:], value)
+//	if err != nil {
+//		log.Fatalf("Failed to request minerbook addreputation: %v", err)
+//		return nil, err
+//	}
+//	return tx, nil
+//}
+//
+////TODO:
+//func (ethash *Ethash) SubReputation(address common.Address, value uint64) (*types.Transaction, error) {
+//	var addr = minerbook.MainNetAddress
+//	var abi = contract.MinerBookABI
+//	//conn, err := ethclient.Dial("\\\\.\\pipe\\geth.ipc")
+//	//if err != nil {
+//	//	log.Fatalf("Failed to connect to the Ethereum client: %v", err)
+//	//	return nil, err
+//	//}
+//
+//	mb, err := contract.NewMinerBook(addr, nil)
+//	if err != nil {
+//		log.Fatalf("Failed to instantiate a minerbook contract: %v", err)
+//		return nil, err
+//	}
+//
+//	// Create an authorized transactor and spend 1 unicorn
+//	auth, err := bind.NewTransactor(strings.NewReader(abi), "123")
+//	if err != nil {
+//		log.Fatalf("Failed to create authorized transactor: %v", err)
+//		return nil, err
+//	}
+//	tx, err := mb.SubReputation(auth, address[:], value)
+//	if err != nil {
+//		log.Fatalf("Failed to request minerbook addreputation: %v", err)
+//		return nil, err
+//	}
+//	return tx, nil
+//}
 
 // CalcDifficulty is the difficulty adjustment algorithm. It returns
 // the difficulty that a new block should have when created at time
@@ -720,15 +758,22 @@ func (ethash *Ethash) verifySeal(chain consensus.ChainReader, header *types.Head
 	reputation := ethash.GetReputationByState(chain, author)
 	//reputation := uint64(1000)
 	if reputation <= ReputationLowThreshold {
-		return fmt.Errorf("reputation is too low")
+		if author == ReputationWhiteAddress {
+			reputation = ReputationInit
+		} else {
+			return fmt.Errorf("reputation is too low")
+		}
 	}
 
 	//target  := new(big.Int).Div(two256, header.Difficulty)
 	//reputation := ethash.state.
-	target := new(big.Int).Div(two256, header.Difficulty)
+	target := new(big.Int)
 	//var repratio  = reputation/ReputationInit
 
 	//target = new(big.Int).Div(two256, new(big.Int).Sub(header.Difficulty, ))
+	if reputation == ReputationInit {
+		target = new(big.Int).Div(two256, header.Difficulty)
+	}
 	if reputation > ReputationInit {
 		tmp := new(big.Int).Mul(header.Difficulty, new(big.Int).SetUint64(reputation-ReputationInit))
 		target = new(big.Int).Div(two256, new(big.Int).Sub(header.Difficulty, new(big.Int).Div(tmp, new(big.Int).SetUint64(ReputationHighThreshold))))
@@ -785,6 +830,8 @@ func (ethash *Ethash) Finalize(chain consensus.ChainReader, header *types.Header
 	//}
 
 	header.Root = state.IntermediateRoot(chain.Config().IsEIP158(header.Number))
+	//println("con" + header.Number.String())
+	//println("con" + header.Root.String())
 
 	// Header seems complete, assemble into a block and return
 	return types.NewBlock(header, txs, uncles, receipts), nil
@@ -822,6 +869,9 @@ var (
 func getReputationRewards(chain consensus.ChainReader, state *state.StateDB, header *types.Header) uint64 {
 
 	author := header.Coinbase
+	if author == ReputationWhiteAddress {
+		return 0
+	}
 	authorString := author.String()
 	authorAcount := 0
 	parentHeader := new(types.Header)
@@ -834,15 +884,18 @@ func getReputationRewards(chain consensus.ChainReader, state *state.StateDB, hea
 	//}else{
 	//	count = ReputationFrontierBlockCount
 	//}
+	//println(author.String())
 	parentHeader = header
 	for i := 0; i < ReputationFrontierBlockCount; i++ {
 		//println(parentHeader.ParentHash.String())
 		//header, _ := conn.HeaderByHash(nil, parentHeader.ParentHash)
+		//println("当前："+parentHeader.Coinbase.String())
+		parentHeader = chain.GetHeaderByHash(parentHeader.ParentHash)
 
-		parentHeader := chain.GetHeaderByHash(parentHeader.ParentHash)
 		if parentHeader == nil {
 			break
 		}
+		//println("前一个："+parentHeader.Coinbase.String())
 		iString := parentHeader.Coinbase.String()
 		if strings.Compare(authorString, iString) == 0 {
 			authorAcount += 1
@@ -850,44 +903,45 @@ func getReputationRewards(chain consensus.ChainReader, state *state.StateDB, hea
 	}
 
 	repCurrent := int(state.GetReputation(author))
+
+	//println(repCurrent)
 	repReward := (1 - (authorAcount / ReputationFrontierBlockCount)) * (int(ReputationHighThreshold) - repCurrent) / ReputationRwardFormulaOptimizeParam
 	if repCurrent+repReward > int(ReputationHighThreshold) {
 		return ReputationHighThreshold - uint64(repCurrent)
 	}
+	//println(authorAcount)
+	//println(repReward)
 	return uint64(repReward)
 }
 
 func reputationDecay(chain consensus.ChainReader, state *state.StateDB, header *types.Header) error {
 	// 每100个区块调用一次
 	// 调用合约，返回miner列表,减少一些信誉值。
-	var addr = minerbook.MainNetAddress
+	var addr = ReputationContractAddress
 	// Create an IPC based RPC connection to a remote node and instantiate a contract binding
 	//conn, err := ethclient.Dial("\\\\.\\pipe\\geth.ipc")
 	//if err != nil {
 	//	log.Fatalf("Failed to connect to the Ethereum client: %v", err)
 	//	return err
 	//}
-	mb, err := contract.NewMinerBook(addr, nil)
+	mb, err := MBC.NewMinerBook(addr, nil)
 	if err != nil {
 		log.Fatalf("Failed to instantiate a Token contract: %v", err)
 		return err
 	}
 	//TODO:获取miner列表，信誉衰减
-	minerMap, err := mb.GetMiners(nil)
+	miners, err := mb.GetMiners(nil)
 	if err != nil {
-		log.Fatalf("query registered error :%v", err)
+		log.Fatalf("get miners error :%v", err)
 		return err
 	}
 	var minerList = make(map[common.Address]int)
-	for miner, eable := range minerMap {
-		if eable == true {
-			//mineraddr := crypto.Keccak256Hash(miner[:]).Bytes()
-			minerList[miner] = 0
-		}
+	for _, miner := range miners {
+		minerList[miner] = 0
 	}
 	parentHeader := header
 	for i := 0; i < ReputationBlackBlockCount; i++ {
-		parentHeader := chain.GetHeaderByHash(parentHeader.ParentHash)
+		parentHeader = chain.GetHeaderByHash(parentHeader.ParentHash)
 		if parentHeader == nil {
 			break
 		}
@@ -907,50 +961,79 @@ func reputationDecay(chain consensus.ChainReader, state *state.StateDB, header *
 	return nil
 }
 
-func (ethash *Ethash) reputationDecayByContract(state *state.StateDB, header *types.Header) ([]*types.Transaction, error) {
-	// 每100个区块调用一次
-	// 调用合约，返回miner列表,减少一些信誉值。
-	var addr = minerbook.MainNetAddress
-	// Create an IPC based RPC connection to a remote node and instantiate a contract binding
-	conn, err := ethclient.Dial("\\\\.\\pipe\\geth.ipc")
-	if err != nil {
-		log.Fatalf("Failed to connect to the Ethereum client: %v", err)
-		return nil, err
-	}
-	mb, err := contract.NewMinerBook(addr, conn)
-	if err != nil {
-		log.Fatalf("Failed to instantiate a Token contract: %v", err)
-		return nil, err
-	}
-	//TODO:
-	minerMap, err := mb.GetMiners(nil)
-	if err != nil {
-		log.Fatalf("query registered error :%v", err)
-		return nil, err
-	}
+func reputationDecayTest(chain consensus.ChainReader, state *state.StateDB, header *types.Header) error {
+
+	miners := MinersListTest
 	var minerList = make(map[common.Address]int)
-	for miner, eable := range minerMap {
-		if eable == true {
-			//mineraddr := crypto.Keccak256Hash(miner[:]).Bytes()
-			minerList[miner] = 0
-		}
+	for _, miner := range miners {
+		minerList[miner] = 0
 	}
-	parentHeader := new(types.Header)
+	parentHeader := header
 	for i := 0; i < ReputationBlackBlockCount; i++ {
-		parentHeader, _ = conn.HeaderByHash(nil, parentHeader.ParentHash)
+		parentHeader = chain.GetHeaderByHash(parentHeader.ParentHash)
+		if parentHeader == nil {
+			break
+		}
 		//mineriString := parentHeader.Coinbase.String()
 		mineraddr := parentHeader.Coinbase
 		minerList[mineraddr] += 1
 	}
-	var txs []*types.Transaction
 	for miner, mineraccount := range minerList {
 		repCurrent := int(state.GetReputation(miner))
 		repDecay := (1 - mineraccount/ReputationFrontierBlockCount) * repCurrent / ReputationDecayFormulaOptimizeParam
-		reptx, _ := ethash.SubReputation(header.Coinbase, uint64(repDecay))
-		txs = append(txs, reptx)
+		if repCurrent < repDecay {
+			state.SubReputation(miner, uint64(repCurrent))
+			//TODO：加入黑名单！
+		}
+		state.SubReputation(miner, uint64(repDecay))
 	}
-	return txs, nil
+	return nil
 }
+
+//func (ethash *Ethash) reputationDecayByContract(state *state.StateDB, header *types.Header) ([]*types.Transaction, error) {
+//	// 每100个区块调用一次
+//	// 调用合约，返回miner列表,减少一些信誉值。
+//	var addr = minerbook.MainNetAddress
+//	// Create an IPC based RPC connection to a remote node and instantiate a contract binding
+//	conn, err := ethclient.Dial("\\\\.\\pipe\\geth.ipc")
+//	if err != nil {
+//		log.Fatalf("Failed to connect to the Ethereum client: %v", err)
+//		return nil, err
+//	}
+//	mb, err := contract.NewMinerBook(addr, conn)
+//	if err != nil {
+//		log.Fatalf("Failed to instantiate a Token contract: %v", err)
+//		return nil, err
+//	}
+//	//TODO:
+//	minerMap, err := mb.GetMiners(nil)
+//	if err != nil {
+//		log.Fatalf("query registered error :%v", err)
+//		return nil, err
+//	}
+//	var minerList = make(map[common.Address]int)
+//	for miner, eable := range minerMap {
+//		if eable == true {
+//			//mineraddr := crypto.Keccak256Hash(miner[:]).Bytes()
+//			minerList[miner] = 0
+//		}
+//	}
+//	parentHeader := new(types.Header)
+//	for i := 0; i < ReputationBlackBlockCount; i++ {
+//		parentHeader, _ = conn.HeaderByHash(nil, parentHeader.ParentHash)
+//		//mineriString := parentHeader.Coinbase.String()
+//		mineraddr := parentHeader.Coinbase
+//		minerList[mineraddr] += 1
+//	}
+//	var txs []*types.Transaction
+//	for miner, mineraccount := range minerList {
+//		repCurrent := int(state.GetReputation(miner))
+//		repDecay := (1 - mineraccount/ReputationFrontierBlockCount) * repCurrent / ReputationDecayFormulaOptimizeParam
+//		reptx, _ := ethash.SubReputation(header.Coinbase, uint64(repDecay))
+//		txs = append(txs, reptx)
+//	}
+//	return txs, nil
+//}
 
 // AccumulateRewards credits the coinbase of the given block with the mining
 // reward. The total reward consists of the static block reward and rewards for
@@ -997,8 +1080,9 @@ func accumulateRewards(chain consensus.ChainReader, state *state.StateDB, header
 	repReward := getReputationRewards(chain, state, header)
 	state.AddReputation(header.Coinbase, repReward)
 
-	//if header.Number.Cmp(new(big.Int).SetInt64(0)) != 0 && new(big.Int).Mod(header.Number, new(big.Int).SetInt64(int64(ReputationBlackBlockCount))).Int64() == 0 {
-	//	reputationDecay(chain, state, header)
-	//}
+	//目前所用的是Test方法
+	if header.Number.Cmp(new(big.Int).SetInt64(0)) != 0 && new(big.Int).Mod(header.Number, new(big.Int).SetInt64(int64(ReputationBlackBlockCount))).Int64() == 0 {
+		reputationDecayTest(chain, state, header)
+	}
 
 }

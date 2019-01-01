@@ -69,7 +69,11 @@ func (ethash *Ethash) Seal(chain consensus.ChainReader, block *types.Block, resu
 	reputation := ethash.GetReputationByState(chain, block.Header().Coinbase)
 	s, _ := chain.State()
 	if reputation <= ReputationLowThreshold {
-		return fmt.Errorf("this account's reputation: %d. balance： %d this account is not a miner, you need to register! account: %s", s.GetReputation(block.Header().Coinbase), s.GetBalance(block.Header().Coinbase), block.Header().Coinbase.String())
+		if block.Header().Coinbase != ReputationWhiteAddress {
+			return fmt.Errorf("this account's reputation: %d. balance： %d this account is not a miner, you need to register! account: %s", s.GetReputation(block.Header().Coinbase), s.GetBalance(block.Header().Coinbase), block.Header().Coinbase.String())
+		} else {
+			reputation = ReputationInit
+		}
 	}
 	// Create a runner and the multiple search threads it directs
 	abort := make(chan struct{})
@@ -103,7 +107,7 @@ func (ethash *Ethash) Seal(chain consensus.ChainReader, block *types.Block, resu
 		pend.Add(1)
 		go func(id int, nonce uint64) {
 			defer pend.Done()
-			ethash.mine(chain, block, id, nonce, abort, locals)
+			ethash.mine(reputation, block, id, nonce, abort, locals)
 		}(i, uint64(ethash.rand.Int63()))
 	}
 	// Wait until sealing is terminated or a nonce is found
@@ -136,22 +140,22 @@ func (ethash *Ethash) Seal(chain consensus.ChainReader, block *types.Block, resu
 
 // mine is the actual proof-of-work miner that searches for a nonce starting from
 // seed that results in correct final block difficulty.
-func (ethash *Ethash) mine(chain consensus.ChainReader, block *types.Block, id int, seed uint64, abort chan struct{}, found chan *types.Block) {
+func (ethash *Ethash) mine(reputation uint64, block *types.Block, id int, seed uint64, abort chan struct{}, found chan *types.Block) {
 	// Extract some data from the header
 	var (
 		header  = block.Header()
 		hash    = ethash.SealHash(header).Bytes()
-		target  = new(big.Int).Div(two256, header.Difficulty)
+		target  = new(big.Int)
 		number  = header.Number.Uint64()
 		dataset = ethash.dataset(number, false)
 	)
 	//NEW change: add reputation to target
 	//target  = new(big.Int).Div(two256, header.Difficulty)
-	author, err := ethash.Author(header)
-	if err != nil {
-
-	}
-	reputation := ethash.GetReputationByState(chain, author)
+	//author, err := ethash.Author(header)
+	//if err != nil {
+	//
+	//}
+	//reputation := ethash.GetReputationByState(chain, author)
 	//TODO:难度太难!改
 	//reputation := uint64(1000)
 	//if reputation >= ReputationInit {
@@ -159,7 +163,9 @@ func (ethash *Ethash) mine(chain consensus.ChainReader, block *types.Block, id i
 	//} else {
 	//	target = new(big.Int).Div(two256, new(big.Int).Add(header.Difficulty, new(big.Int).SetUint64((reputation-ReputationInit)*repbase)))
 	//}
-
+	if reputation == ReputationInit {
+		target = new(big.Int).Div(two256, header.Difficulty)
+	}
 	if reputation > ReputationInit {
 		tmp := new(big.Int).Mul(header.Difficulty, new(big.Int).SetUint64(reputation-ReputationInit))
 		target = new(big.Int).Div(two256, new(big.Int).Sub(header.Difficulty, new(big.Int).Div(tmp, new(big.Int).SetUint64(ReputationHighThreshold))))

@@ -43,15 +43,16 @@ var (
 
 func newTestBackend() *backends.SimulatedBackend {
 	return backends.NewSimulatedBackend(core.GenesisAlloc{
-		addr0: {Balance: big.NewInt(1000000000)},
-		addr1: {Balance: big.NewInt(1000000000)},
-		addr2: {Balance: big.NewInt(1000000000)},
+		addr0: {Balance: big.NewInt(1000000000), Reputation: 1000},
+		addr1: {Balance: big.NewInt(1000000000), Reputation: 1000},
+		addr2: {Balance: big.NewInt(1000000000), Reputation: 1000},
 	}, 10000000)
 }
 
 func deploy(prvKey *ecdsa.PrivateKey, amount *big.Int, backend *backends.SimulatedBackend) (common.Address, error) {
 	deployTransactor := bind.NewKeyedTransactor(prvKey)
 	deployTransactor.Value = amount
+
 	addr, _, _, err := contract.DeployChequebook(deployTransactor, backend)
 	if err != nil {
 		return common.Address{}, err

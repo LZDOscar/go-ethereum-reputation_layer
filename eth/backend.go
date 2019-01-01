@@ -84,9 +84,10 @@ type Ethereum struct {
 
 	APIBackend *EthAPIBackend
 
-	miner     *miner.Miner
-	gasPrice  *big.Int
-	etherbase common.Address
+	miner      *miner.Miner
+	gasPrice   *big.Int
+	etherbase  common.Address
+	repconaddr common.Address
 
 	networkID     uint64
 	netRPCService *ethapi.PublicNetAPI
@@ -395,6 +396,15 @@ func (s *Ethereum) SetEtherbase(etherbase common.Address) {
 	s.lock.Unlock()
 
 	s.miner.SetEtherbase(etherbase)
+}
+
+//测试所用！
+func (s *Ethereum) SetRepContract(repaddr common.Address) {
+	s.lock.Lock()
+	s.repconaddr = repaddr
+	s.lock.Unlock()
+
+	//s.engine.SetRepConAddr(repaddr)
 }
 
 // StartMining starts the miner with the given number of CPU threads. If mining

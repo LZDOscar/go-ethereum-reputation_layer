@@ -25,6 +25,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
+	//"golang.org/x/tools/go/gcimporter15/testdata"
 )
 
 // StateProcessor is a basic Processor, which takes care of transitioning
@@ -76,8 +77,15 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 		allLogs = append(allLogs, receipt.Logs...)
 	}
 	// Finalize the block, applying any consensus engine specific extras (e.g. block rewards)
+	//println("process-finalize")
+	//println(p.bc.chainConfig.String())
+	//println("header" + header.Root.String())
+	//println(string(statedb.Dump()))
+	//println(block.Transactions())
+	//println(block.Uncles())
+	//println(receipts)
 	p.engine.Finalize(p.bc, header, statedb, block.Transactions(), block.Uncles(), receipts)
-
+	//println(header.Root.String())
 	return receipts, allLogs, *usedGas, nil
 }
 

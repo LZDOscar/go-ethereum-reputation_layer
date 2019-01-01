@@ -1,5 +1,66 @@
 pragma solidity 0.5.2;
 
+library IterableMapping
+{
+  struct itmap
+  {
+    mapping(address => IndexValue) data;
+    KeyFlag[] keys;
+    uint size;
+  }
+  struct IndexValue { uint keyIndex; bool value; }
+  struct KeyFlag { address key; bool deleted; }
+  function insert(itmap storage self, address key, bool value) public returns (bool replaced)
+  {
+    uint keyIndex = self.data[key].keyIndex;
+    self.data[key].value = value;
+    if (keyIndex > 0)
+      return true;
+    else
+    {
+      keyIndex = self.keys.length++;
+      self.data[key].keyIndex = keyIndex + 1;
+      self.keys[keyIndex].key = key;
+      self.size++;
+      return false;
+    }
+  }
+  function remove(itmap storage self, address key) public returns (bool success)
+  {
+    uint keyIndex = self.data[key].keyIndex;
+    if (keyIndex == 0)
+      return false;
+    delete self.data[key];
+    self.keys[keyIndex - 1].deleted = true;
+    self.size --;
+  }
+  function contains(itmap storage self, address key)public  returns (bool)
+  {
+    return self.data[key].keyIndex > 0;
+  }
+  function iterate_start(itmap storage self)public returns (uint keyIndex)
+  {
+    return iterate_next(self, uint(-1));
+  }
+  function iterate_valid(itmap storage self, uint keyIndex)public returns (bool)
+  {
+    return keyIndex < self.keys.length;
+  }
+  function iterate_next(itmap storage self, uint keyIndex)public returns (uint r_keyIndex)
+  {
+    keyIndex++;
+    while (keyIndex < self.keys.length && self.keys[keyIndex].deleted)
+      keyIndex++;
+    return keyIndex;
+  }
+  function iterate_get(itmap storage self, uint keyIndex)public returns (address key, bool value)
+  {
+    key = self.keys[keyIndex].key;
+    value = self.data[key].value;
+  }
+}
+
+
 contract minerbook {
     event MinerRegistered(
         address indexed hashedPubkey,
@@ -26,8 +87,10 @@ contract minerbook {
     //TODO: address => (state, register_name, register_ID, enable)
     //enable：default is true, if the miner is punished because of lowing than REPUTATION_LOWLIMIT
     // the enable value is false, the address can't register again.
+    // IterableMapping.itmap public usedHashedPubkey;
     mapping (address => bool) public usedHashedPubkey;
-
+    address[] public regedAddrs;
+    uint public regedAddrsLen = 0;
     mapping (address => address) public withdrawAddrs;
 
     //reputation list: address => reputation value
@@ -65,13 +128,26 @@ contract minerbook {
         //bytes48 hashedPubkey = keccak256(abi.encodePacked(_pubkey));
         //one address must be registerd once.
         require(
+            // !IterableMapping.contains(usedHashedPubkey,hashedPubkey),
             !usedHashedPubkey[hashedPubkey],
             "Public key already used"
         );
 
         //TODO：check the register's info whether it is used
 
+        // IterableMapping.insert(usedHashedPubkey,hashedPubkey,true);
         usedHashedPubkey[hashedPubkey] = true;
+
+        if(regedAddrsLen == regedAddrs.length){
+            regedAddrs.push(hashedPubkey);
+            regedAddrsLen ++;
+        }
+        else{
+            regedAddrs[regedAddrsLen] = hashedPubkey;
+            regedAddrsLen ++;
+        }
+
+
         withdrawAddrs[hashedPubkey] = _withdrawalAddressbytes48;
         //TODO: add reoutation intital
         reputationList[hashedPubkey] = 0;
@@ -93,24 +169,55 @@ contract minerbook {
         //bytes48 hashedPubkey = keccak256(abi.encodePacked(_pubkey));
         //one address must be registerd once.
         require(
+            // IterableMapping.contains(usedHashedPubkey,hashedPubkey),
             usedHashedPubkey[hashedPubkey],
             "Public key is not used"
         );
 
         //TODO：check the register's info whether it is used
-
+        // IterableMapping.remove(usedHashedPubkey,hashedPubkey);
         delete usedHashedPubkey[hashedPubkey];
 
+        for(uint i = 0; i < regedAddrsLen;i++){
+            if (regedAddrs[i] == hashedPubkey){
+                if(regedAddrsLen == 1){
+                    delete regedAddrs[i];
+                    regedAddrsLen = 0;
+                }
+                else{
+                    regedAddrs[i] = regedAddrs[regedAddrsLen-1];
+                    delete regedAddrs[regedAddrsLen-1];
+                    regedAddrsLen -= 1;
+                }
+
+                break;
+            }
+        }
         //TODO: add reoutation intital
         delete reputationList[hashedPubkey];
 
         emit MinerDeRegistered(hashedPubkey);
     }
 
-    // function getMiners() public
-    // {
-    //     return usedHashedPubkey;
-    // }
+    function getMiners()  public view  returns(address[] memory)
+    {
+        // address [] T = [];
+    //   address[] T = [];
+        // for (uint i = IterableMapping.iterate_start(usedHashedPubkey); IterableMapping.iterate_valid(usedHashedPubkey, i); i = IterableMapping.iterate_next(usedHashedPubkey, i))
+        // {
+        //     address key;
+        //     bool value;
+        //     (key, value) =IterableMapping.iterate_get(usedHashedPubkey, i);
+        //     miners.push(key);
+        // }
+        // miners = regedAddrs;
+        address[] memory miners = new address[](regedAddrsLen);
+        for(uint i = 0; i < regedAddrsLen; i++){
+            miners[i] = (regedAddrs[i]);
+            // miners.length += 1;
+        }
+        return (miners);
+     }
 
     // function addReputation(address _pubkey, uint value) public payable{
     //     require(
@@ -165,3 +272,5 @@ contract minerbook {
     // }
 
 }
+
+
