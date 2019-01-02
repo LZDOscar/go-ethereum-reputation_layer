@@ -35,6 +35,7 @@ import (
 	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
+	"strings"
 )
 
 const (
@@ -75,6 +76,27 @@ func (ethash *Ethash) Seal(chain consensus.ChainReader, block *types.Block, resu
 			reputation = ReputationInit
 		}
 	}
+	author := block.Coinbase()
+	parentHeader := block.Header()
+	authorAccount := 0
+	for i := 0; i < ReputationCalcDiffBlockCount; i++ {
+		//println(parentHeader.ParentHash.String())
+		//header, _ := conn.HeaderByHash(nil, parentHeader.ParentHash)
+		//println("当前："+parentHeader.Coinbase.String())
+		parentHeader = chain.GetHeaderByHash(parentHeader.ParentHash)
+
+		if parentHeader == nil {
+			break
+		}
+		//println("前一个："+parentHeader.Coinbase.String())
+		iString := parentHeader.Coinbase.String()
+		if strings.Compare(author.String(), iString) == 0 {
+			authorAccount += 1
+		}
+	}
+	//指数增加难度，
+	reputation = uint64(float64(reputation) / (math.Pow(1.3, float64(authorAccount))))
+
 	// Create a runner and the multiple search threads it directs
 	abort := make(chan struct{})
 
@@ -163,6 +185,7 @@ func (ethash *Ethash) mine(reputation uint64, block *types.Block, id int, seed u
 	//} else {
 	//	target = new(big.Int).Div(two256, new(big.Int).Add(header.Difficulty, new(big.Int).SetUint64((reputation-ReputationInit)*repbase)))
 	//}
+
 	if reputation == ReputationInit {
 		target = new(big.Int).Div(two256, header.Difficulty)
 	}

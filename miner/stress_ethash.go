@@ -55,7 +55,12 @@ func main() {
 	mineraccs := []common.Address{common.HexToAddress("0000000000000000000000000000000000000001"),
 		common.HexToAddress("0000000000000000000000000000000000000002"),
 		common.HexToAddress("0000000000000000000000000000000000000003"),
-		common.HexToAddress("0000000000000000000000000000000000000004")}
+		common.HexToAddress("0000000000000000000000000000000000000004"),
+		common.HexToAddress("0000000000000000000000000000000000000005"),
+		common.HexToAddress("0000000000000000000000000000000000000006"),
+		common.HexToAddress("0000000000000000000000000000000000000007"),
+		common.HexToAddress("0000000000000000000000000000000000000008"),
+	}
 	for i := 0; i < len(faucets); i++ {
 		faucets[i], _ = crypto.GenerateKey()
 		//println(crypto.PubkeyToAddress(faucets[i].PublicKey).String())
@@ -74,7 +79,7 @@ func main() {
 		nodes  []*node.Node
 		enodes []*enode.Node
 	)
-	for i := 0; i < 4; i++ {
+	for i := 0; i < 8; i++ {
 		// Start the node and wait until it's up
 		node, err := makeMiner(genesis)
 		if err != nil {
@@ -185,7 +190,8 @@ func main() {
 
 func makeGenesis(faucets []*ecdsa.PrivateKey, mineraccs []common.Address) *core.Genesis {
 	genesis := core.DefaultReputationnetGenesisBlock()
-	genesis.Difficulty = params.MinimumDifficulty
+	//genesis.Difficulty = params.MinimumDifficulty
+	genesis.Difficulty = new(big.Int).SetInt64(131072)
 	genesis.GasLimit = 25000000
 
 	genesis.Config.ChainID = big.NewInt(18)
@@ -208,7 +214,7 @@ func makeGenesis(faucets []*ecdsa.PrivateKey, mineraccs []common.Address) *core.
 		genesis.Alloc[mineracc] = core.GenesisAccount{
 			Balance: new(big.Int).Exp(big.NewInt(2), big.NewInt(128), nil),
 			//TODO
-			Reputation: uint64(1000) + uint64(i*200),
+			Reputation: uint64(1000),
 		}
 		i++
 	}
