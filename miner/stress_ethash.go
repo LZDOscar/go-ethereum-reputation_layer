@@ -125,7 +125,7 @@ func main() {
 			panic(err)
 		}
 	}
-	time.Sleep(10 * time.Second)
+	time.Sleep(1 * time.Second)
 	//
 	// Start injecting transactions from the faucets like crazy
 	nonces := make([]uint64, len(faucets))
@@ -191,7 +191,7 @@ func main() {
 func makeGenesis(faucets []*ecdsa.PrivateKey, mineraccs []common.Address) *core.Genesis {
 	genesis := core.DefaultReputationnetGenesisBlock()
 	genesis.Difficulty = params.MinimumDifficulty
-	genesis.Difficulty = new(big.Int).SetInt64(1810720)
+	genesis.Difficulty = new(big.Int).SetInt64(2210720)
 	genesis.GasLimit = 25000000
 
 	genesis.Config.ChainID = big.NewInt(18)
@@ -211,11 +211,11 @@ func makeGenesis(faucets []*ecdsa.PrivateKey, mineraccs []common.Address) *core.
 	i := 0
 	for _, mineracc := range mineraccs {
 
-		if i < 8{
+		if i < 8 {
 			genesis.Alloc[mineracc] = core.GenesisAccount{
 				Balance: new(big.Int).Exp(big.NewInt(2), big.NewInt(128), nil),
 				//TODO
-				Reputation: uint64(1000),
+				Reputation: uint64(600 + i*200),
 			}
 		}
 		//else{
