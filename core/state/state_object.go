@@ -320,9 +320,12 @@ func (c *stateObject) AddReputation(reputation uint64) {
 // It is used to remove funds from the origin account of a transfer.
 func (c *stateObject) SubReputation(reputation uint64) {
 	if reputation == 0 {
+		if c.empty() {
+			c.touch()
+		}
 		return
 	}
-	c.SetReputation(c.Reputation() + reputation)
+	c.SetReputation(c.Reputation() - reputation)
 }
 
 func (self *stateObject) SetReputation(reputation uint64) {
