@@ -233,7 +233,7 @@ func NewTxPool(config TxPoolConfig, chainconfig *params.ChainConfig, chain block
 	}
 	pool.locals = newAccountSet(pool.signer)
 	for _, addr := range config.Locals {
-		log.Info("Setting new local account", "address", addr)
+		//log.Info("Setting new local account", "address", addr)
 		pool.locals.add(addr)
 	}
 	pool.priced = newTxPricedList(pool.all)
@@ -679,7 +679,7 @@ func (pool *TxPool) add(tx *types.Transaction, local bool) (bool, error) {
 	// Mark local addresses and journal local transactions
 	if local {
 		if !pool.locals.contains(from) {
-			log.Info("Setting new local account", "address", from)
+			//log.Info("Setting new local account", "address", from)
 			pool.locals.add(from)
 		}
 	}

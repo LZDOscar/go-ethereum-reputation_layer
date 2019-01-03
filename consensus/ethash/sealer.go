@@ -191,11 +191,11 @@ func (ethash *Ethash) mine(reputation uint64, block *types.Block, id int, seed u
 	}
 	if reputation > ReputationInit {
 		tmp := new(big.Int).Mul(header.Difficulty, new(big.Int).SetUint64(reputation-ReputationInit))
-		target = new(big.Int).Div(two256, new(big.Int).Sub(header.Difficulty, new(big.Int).Div(tmp, new(big.Int).SetUint64(ReputationHighThreshold))))
+		target = new(big.Int).Div(two256, new(big.Int).Sub(header.Difficulty, new(big.Int).Div(tmp, new(big.Int).SetUint64(ReputationInit*3))))
 	}
 	if reputation < ReputationInit {
 		tmp := new(big.Int).Mul(header.Difficulty, new(big.Int).SetUint64(ReputationInit-reputation))
-		target = new(big.Int).Div(two256, new(big.Int).Add(header.Difficulty, new(big.Int).Div(tmp, new(big.Int).SetUint64(ReputationHighThreshold))))
+		target = new(big.Int).Div(two256, new(big.Int).Add(header.Difficulty, new(big.Int).Div(tmp, new(big.Int).SetUint64(ReputationInit*3))))
 	}
 	//println(target.String())
 	// Start generating random nonces until we abort or find a good one

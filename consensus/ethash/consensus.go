@@ -57,11 +57,11 @@ var (
 	ReputationLowThreshold              = uint64(0)
 	ReputationHighThreshold             = uint64(2000)
 	ReputationInit                      = uint64(1000)
-	ReputationFrontierBlockCount        = 32 //测试所用值，真实值要根据miner数量来定，大概为4×minerAccount
-	ReputationBlackBlockCount           = 48 //测试所用值，真实值要根据miner数量来定，大概为6×minerAccount
+	ReputationFrontierBlockCount        = 20 //测试所用值，真实值要根据miner数量来定，大概为4×minerAccount
+	ReputationBlackBlockCount           = 30 //测试所用值，真实值要根据miner数量来定，大概为6×minerAccount
 	ReputationRwardFormulaOptimizeParam = 100
 	ReputationDecayFormulaOptimizeParam = 30
-	ReputationCalcDiffBlockCount        = 16 // 测试所用值，真实值要根据miner数量来定，大概为2×minerAccount
+	ReputationCalcDiffBlockCount        = 10 // 测试所用值，真实值要根据miner数量来定，大概为2×minerAccount
 	ReputationWhiteAddress              = common.HexToAddress("0000000000000000000000000000000000000000")
 	// calcDifficultyConstantinople is the difficulty adjustment algorithm for Constantinople.
 	// It returns the difficulty that a new block should have when created at time given the
@@ -83,9 +83,9 @@ var (
 		common.HexToAddress("0000000000000000000000000000000000000003"),
 		common.HexToAddress("0000000000000000000000000000000000000004"),
 		common.HexToAddress("0000000000000000000000000000000000000005"),
-		common.HexToAddress("0000000000000000000000000000000000000006"),
-		common.HexToAddress("0000000000000000000000000000000000000007"),
-		common.HexToAddress("0000000000000000000000000000000000000008"),
+		//common.HexToAddress("0000000000000000000000000000000000000006"),
+		//common.HexToAddress("0000000000000000000000000000000000000007"),
+		//common.HexToAddress("0000000000000000000000000000000000000008"),
 	}
 )
 
@@ -801,11 +801,11 @@ func (ethash *Ethash) verifySeal(chain consensus.ChainReader, header *types.Head
 	}
 	if reputation > ReputationInit {
 		tmp := new(big.Int).Mul(header.Difficulty, new(big.Int).SetUint64(reputation-ReputationInit))
-		target = new(big.Int).Div(two256, new(big.Int).Sub(header.Difficulty, new(big.Int).Div(tmp, new(big.Int).SetUint64(ReputationHighThreshold))))
+		target = new(big.Int).Div(two256, new(big.Int).Sub(header.Difficulty, new(big.Int).Div(tmp, new(big.Int).SetUint64(ReputationInit*3))))
 	}
 	if reputation < ReputationInit {
 		tmp := new(big.Int).Mul(header.Difficulty, new(big.Int).SetUint64(ReputationInit-reputation))
-		target = new(big.Int).Div(two256, new(big.Int).Add(header.Difficulty, new(big.Int).Div(tmp, new(big.Int).SetUint64(ReputationHighThreshold))))
+		target = new(big.Int).Div(two256, new(big.Int).Add(header.Difficulty, new(big.Int).Div(tmp, new(big.Int).SetUint64(ReputationInit*3))))
 	}
 
 	//if reputation >= ReputationInit {
@@ -929,10 +929,14 @@ func getReputationRewards(chain consensus.ChainReader, state *state.StateDB, hea
 	}
 
 	repCurrent := int(state.GetReputation(author))
-
+	repRadio := float64(repCurrent) / float64(ReputationHighThreshold)
+	expected := float64(authorAcount*ReputationCalcDiffBlockCount) / (float64(ReputationFrontierBlockCount) * repRadio * 5)
+	if expected > 1 {
+		expected = 1
+	}
 	//println(repCurrent)
-	repReward := (1 - (authorAcount / ReputationFrontierBlockCount)) * (int(ReputationHighThreshold) - repCurrent) / ReputationRwardFormulaOptimizeParam
-	if repCurrent+repReward > int(ReputationHighThreshold) {
+	repReward := float64(1-expected) * float64(int(ReputationHighThreshold)-repCurrent) / float64(ReputationRwardFormulaOptimizeParam)
+	if repCurrent+int(repReward) > int(ReputationHighThreshold) {
 		return ReputationHighThreshold - uint64(repCurrent)
 	}
 	//println(authorAcount)
@@ -977,12 +981,12 @@ func reputationDecay(chain consensus.ChainReader, state *state.StateDB, header *
 	}
 	for miner, mineraccount := range minerList {
 		repCurrent := int(state.GetReputation(miner))
-		repRadio := repCurrent / int(ReputationHighThreshold)
-		expected := mineraccount * ReputationCalcDiffBlockCount / ((ReputationFrontierBlockCount) * repRadio)
+		repRadio := float64(repCurrent) / float64(ReputationHighThreshold)
+		expected := float64(mineraccount*ReputationCalcDiffBlockCount) / (float64(ReputationBlackBlockCount) * repRadio * 2)
 		if expected > 1 {
 			expected = 1
 		}
-		repDecay := (1 - expected) * repCurrent / ReputationDecayFormulaOptimizeParam
+		repDecay := int((1 - expected) * float64(repCurrent) / float64(ReputationDecayFormulaOptimizeParam))
 		if repCurrent < repDecay {
 			state.SubReputation(miner, uint64(repCurrent))
 			//TODO：加入黑名单！
@@ -1013,12 +1017,12 @@ func reputationDecayTest(chain consensus.ChainReader, state *state.StateDB, head
 	}
 	for miner, mineraccount := range minerList {
 		repCurrent := int(state.GetReputation(miner))
-		repRadio := repCurrent / int(ReputationHighThreshold)
-		expected := mineraccount * ReputationCalcDiffBlockCount / ((ReputationFrontierBlockCount) * repRadio)
+		repRadio := float64(repCurrent) / float64(ReputationHighThreshold)
+		expected := float64(mineraccount*ReputationCalcDiffBlockCount) / (float64(ReputationBlackBlockCount) * repRadio * 2)
 		if expected > 1 {
 			expected = 1
 		}
-		repDecay := (1 - expected) * repCurrent / ReputationDecayFormulaOptimizeParam
+		repDecay := int((1 - expected) * float64(repCurrent) / float64(ReputationDecayFormulaOptimizeParam))
 		if repCurrent < repDecay {
 			state.SubReputation(miner, uint64(repCurrent))
 			//TODO：加入黑名单！

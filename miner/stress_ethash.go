@@ -49,7 +49,7 @@ func main() {
 	fdlimit.Raise(2048)
 
 	// Generate a batch of accounts to seal and fund with
-	faucets := make([]*ecdsa.PrivateKey, 16)
+	faucets := make([]*ecdsa.PrivateKey, 128)
 	// miner account
 	//mineraccs := make([]*ecdsa.PrivateKey, 4)
 	mineraccs := []common.Address{common.HexToAddress("0000000000000000000000000000000000000001"),
@@ -57,9 +57,9 @@ func main() {
 		common.HexToAddress("0000000000000000000000000000000000000003"),
 		common.HexToAddress("0000000000000000000000000000000000000004"),
 		common.HexToAddress("0000000000000000000000000000000000000005"),
-		common.HexToAddress("0000000000000000000000000000000000000006"),
-		common.HexToAddress("0000000000000000000000000000000000000007"),
-		common.HexToAddress("0000000000000000000000000000000000000008"),
+		//common.HexToAddress("0000000000000000000000000000000000000006"),
+		//common.HexToAddress("0000000000000000000000000000000000000007"),
+		//common.HexToAddress("0000000000000000000000000000000000000008"),
 	}
 	for i := 0; i < len(faucets); i++ {
 		faucets[i], _ = crypto.GenerateKey()
@@ -79,7 +79,7 @@ func main() {
 		nodes  []*node.Node
 		enodes []*enode.Node
 	)
-	for i := 0; i < 8; i++ {
+	for i := 0; i < 5; i++ {
 		// Start the node and wait until it's up
 		node, err := makeMiner(genesis)
 		if err != nil {
@@ -105,7 +105,7 @@ func main() {
 		}
 	}
 	// Iterate over all the nodes and start signing with them
-	time.Sleep(3 * time.Second)
+	time.Sleep(10 * time.Second)
 	i := 0
 	for _, node := range nodes {
 		var ethereum *eth.Ethereum
@@ -125,7 +125,7 @@ func main() {
 			panic(err)
 		}
 	}
-	time.Sleep(3 * time.Second)
+	time.Sleep(10 * time.Second)
 	//
 	// Start injecting transactions from the faucets like crazy
 	nonces := make([]uint64, len(faucets))
@@ -190,8 +190,8 @@ func main() {
 
 func makeGenesis(faucets []*ecdsa.PrivateKey, mineraccs []common.Address) *core.Genesis {
 	genesis := core.DefaultReputationnetGenesisBlock()
-	//genesis.Difficulty = params.MinimumDifficulty
-	genesis.Difficulty = new(big.Int).SetInt64(131072)
+	genesis.Difficulty = params.MinimumDifficulty
+	genesis.Difficulty = new(big.Int).SetInt64(1810720)
 	genesis.GasLimit = 25000000
 
 	genesis.Config.ChainID = big.NewInt(18)
@@ -211,11 +211,21 @@ func makeGenesis(faucets []*ecdsa.PrivateKey, mineraccs []common.Address) *core.
 	i := 0
 	for _, mineracc := range mineraccs {
 
-		genesis.Alloc[mineracc] = core.GenesisAccount{
-			Balance: new(big.Int).Exp(big.NewInt(2), big.NewInt(128), nil),
-			//TODO
-			Reputation: uint64(1000),
+		if i < 8{
+			genesis.Alloc[mineracc] = core.GenesisAccount{
+				Balance: new(big.Int).Exp(big.NewInt(2), big.NewInt(128), nil),
+				//TODO
+				Reputation: uint64(1000),
+			}
 		}
+		//else{
+		//	genesis.Alloc[mineracc] = core.GenesisAccount{
+		//		Balance: new(big.Int).Exp(big.NewInt(2), big.NewInt(128), nil),
+		//		//TODO
+		//		Reputation: uint64(1000+(i-3)*200),
+		//	}
+		//}
+
 		i++
 	}
 	return genesis
