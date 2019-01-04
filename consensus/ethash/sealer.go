@@ -95,7 +95,7 @@ func (ethash *Ethash) Seal(chain consensus.ChainReader, block *types.Block, resu
 		}
 	}
 	//指数增加难度，
-	reputation = uint64(float64(reputation) / (math.Pow(1.3, float64(authorAccount))))
+	reputation = uint64(float64(reputation) / (math.Pow(ReputationContinuousBlockUsable, float64(authorAccount))))
 
 	// Create a runner and the multiple search threads it directs
 	abort := make(chan struct{})
@@ -191,11 +191,11 @@ func (ethash *Ethash) mine(reputation uint64, block *types.Block, id int, seed u
 	}
 	if reputation > ReputationInit {
 		tmp := new(big.Int).Mul(header.Difficulty, new(big.Int).SetUint64(reputation-ReputationInit))
-		target = new(big.Int).Div(two256, new(big.Int).Sub(header.Difficulty, new(big.Int).Div(tmp, new(big.Int).SetUint64(ReputationInit*3))))
+		target = new(big.Int).Div(two256, new(big.Int).Sub(header.Difficulty, new(big.Int).Div(tmp, new(big.Int).SetUint64(ReputationInit*ReputationDifficultyRadio))))
 	}
 	if reputation < ReputationInit {
 		tmp := new(big.Int).Mul(header.Difficulty, new(big.Int).SetUint64(ReputationInit-reputation))
-		target = new(big.Int).Div(two256, new(big.Int).Add(header.Difficulty, new(big.Int).Div(tmp, new(big.Int).SetUint64(ReputationInit*3))))
+		target = new(big.Int).Div(two256, new(big.Int).Add(header.Difficulty, new(big.Int).Div(tmp, new(big.Int).SetUint64(ReputationInit*ReputationDifficultyRadio))))
 	}
 	//println(target.String())
 	// Start generating random nonces until we abort or find a good one
